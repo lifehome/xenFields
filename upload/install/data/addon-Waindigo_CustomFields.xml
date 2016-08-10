@@ -1,0 +1,2169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<addon addon_id="Waindigo_CustomFields" title="Custom Fields by Waindigo" version_string="2.1.1" version_id="1426236555" url="https://waindigo.org/" install_callback_class="Waindigo_Install" install_callback_method="install" uninstall_callback_class="Waindigo_Install" uninstall_callback_method="uninstall">
+  <admin_navigation>
+    <navigation navigation_id="resourceCustomFields" parent_navigation_id="resources" display_order="30" link="resource-custom-fields" admin_permission_id="resourceManager" debug_only="0" hide_no_children="0"/>
+    <navigation navigation_id="socialForumFields" parent_navigation_id="socialGroups" display_order="100" link="social-forum-fields" admin_permission_id="node" debug_only="0" hide_no_children="0"/>
+    <navigation navigation_id="threadFields" parent_navigation_id="threadsPosts" display_order="10" link="thread-fields" admin_permission_id="thread" debug_only="0" hide_no_children="0"/>
+  </admin_navigation>
+  <admin_permissions/>
+  <admin_style_properties/>
+  <admin_templates>
+    <template title="custom_social_forum_fields_edit"><![CDATA[<xen:foreach loop="$customSocialForumFields" value="$field">
+	<xen:if is="{$field.field_type} == 'textbox'">
+		<xen:textboxunit label="{$field.title}:" explain="{xen:raw $field.description}"
+			name="custom_social_forum_fields[{$field.field_id}]" id="ctrl_custom_social_forum_field_{$field.field_id}"
+			value="{$field.field_value}" maxlength="{xen:if $field.max_length, $field.max_length}"
+			data-validatorname="custom_social_forum_field_{$field.field_id}"
+		/>
+	<xen:elseif is="{$field.field_type} == 'textarea'" />
+		<xen:textboxunit label="{$field.title}:" explain="{xen:raw $field.description}"
+			name="custom_social_forum_fields[{$field.field_id}]" id="ctrl_custom_social_forum_field_{$field.field_id}"
+			value="{$field.field_value}" rows="2" inputclass="Elastic"
+			data-validatorname="custom_social_forum_field_{$field.field_id}"
+		/>
+	<xen:elseif is="{$field.field_type} == 'radio'" />
+		<xen:radiounit label="{$field.title}:" explain="{xen:raw $field.description}"
+			name="custom_social_forum_fields[{$field.field_id}]" id="ctrl_custom_social_forum_field_{$field.field_id}" value="{$field.field_value}"
+		>
+			<xen:option value=""><span class="muted">{xen:phrase no_selection}</span></xen:option>
+			<xen:options source="$field.fieldChoices" />
+		</xen:radiounit>
+	<xen:elseif is="{$field.field_type} == 'select'" />
+		<xen:selectunit label="{$field.title}:" explain="{xen:raw $field.description}"
+			name="custom_social_forum_fields[{$field.field_id}]" id="ctrl_custom_social_forum_field_{$field.field_id}" value="{$field.field_value}"
+		>
+			<xen:option value="">&nbsp;</xen:option>
+			<xen:options source="$field.fieldChoices" />
+		</xen:selectunit>
+	<xen:elseif is="{$field.field_type} == 'checkbox'" />
+		<xen:checkboxunit label="{$field.title}:" explain="{xen:raw $field.description}"
+			name="custom_social_forum_fields[{$field.field_id}]" id="ctrl_custom_social_forum_field_{$field.field_id}" value="{$field.field_value}"
+		>
+			<xen:foreach loop="$field.fieldChoices" key="$_choiceId" value="$_choice">
+				<xen:option value="{$_choiceId}" selected="isset({$field.field_value.{$_choiceId}})">{$_choice}</xen:option>
+			</xen:foreach>
+		</xen:checkboxunit>
+	<xen:elseif is="{$field.field_type} == 'multiselect'" />
+		<xen:selectunit label="{$field.title}:" explain="{xen:raw $field.description}"
+			name="custom_social_forum_fields[{$field.field_id}]" id="ctrl_custom_social_forum_field_{$field.field_id}" value="{xen:raw $field.field_value}"
+			size="7" multiple="multiple"
+		>
+			<xen:option value="">&nbsp;</xen:option>
+			<xen:options source="$field.fieldChoices" />
+		</xen:selectunit>
+	</xen:if>
+	<input type="hidden" name="custom_social_forum_fields_shown[]" value="{$field.field_id}" />
+</xen:foreach>]]></template>
+    <template title="resource_field_group_delete"><![CDATA[<xen:title>{xen:phrase confirm_deletion_of_field_group}: {$fieldGroup.title}</xen:title>
+<xen:h1>{xen:phrase confirm_deletion_of_field_group}</xen:h1>
+
+<xen:navigation>
+	<xen:breadcrumb href="{xen:adminlink 'resource-custom-fields/edit-group', '', 'field_group_id={$fieldGroup.field_group_id}'}">{$fieldGroup.title}</xen:breadcrumb>
+</xen:navigation>
+
+<xen:require css="delete_confirmation.css" />
+
+<xen:form action="{xen:adminlink 'resource-custom-fields/delete-group', '', 'field_group_id={$fieldGroup.field_group_id}'}" class="deleteConfirmForm formOverlay">
+	<p>{xen:phrase please_confirm_that_you_want_to_delete_following_field_group}:</p>
+	<strong><a href="{xen:adminlink 'resource-custom-fields/edit-group', '', 'field_group_id={$fieldGroup.field_group_id}'}">{$fieldGroup.title}</a></strong>
+	<p class="muted">{xen:phrase fields_will_be_disassociated}</p>
+
+	<xen:submitunit save="{xen:phrase delete_field_group}" />
+	<input type="hidden" name="_xfConfirm" value="1" />
+</xen:form>]]></template>
+    <template title="resource_field_group_edit"><![CDATA[<xen:title>{xen:if $fieldGroup.field_group_id, '{xen:phrase edit_field_group}: {$masterTitle}', '{xen:phrase create_new_field_group}'}</xen:title>
+
+<xen:require css="public:resource_fields.css" />
+
+<xen:if is="{$fieldGroup.field_group_id}">
+	<xen:navigation>
+		<xen:breadcrumb href="{xen:adminlink resource-custom-fields}#_group{xen:helper listitemid, $fieldGroup.field_group_id}">{$masterTitle}</xen:breadcrumb>
+	</xen:navigation>
+</xen:if>
+
+<xen:form action="{xen:adminlink resource-custom-fields/save-group}">
+
+	<xen:textboxunit name="title" value="{$masterTitle}" label="{xen:phrase title}:" data-liveTitleTemplate="{xen:if {$fieldGroup.field_group_id},
+		'{xen:phrase edit_field_group}: <em>%s</em>',
+		'{xen:phrase create_new_field_group}: <em>%s</em>'}" />
+	
+	<xen:spinboxunit name="display_order" value="{$fieldGroup.display_order}" label="{xen:phrase display_order}:" min="0" step="10" />
+	
+	<xen:submitunit save="{xen:phrase save_field_group}">
+		<xen:if is="{$fieldGroup.field_group_id}">
+			<input type="button" value="{xen:phrase delete_field_group}..." accesskey="d" class="button OverlayTrigger"
+				data-href="{xen:adminlink 'resource-custom-fields/delete-group', '', 'field_group_id={$fieldGroup.field_group_id}'}" />
+		</xen:if>
+	</xen:submitunit>
+	
+	<input type="hidden" name="field_group_id" value="{$fieldGroup.field_group_id}" />
+
+</xen:form>]]></template>
+    <template title="resource_field_group_list"><![CDATA[<xen:title>{xen:phrase resource_field_groups}</xen:title>
+
+<xen:topctrl><a href="{xen:adminlink resource-custom-fields/add-group}" class="button OverlayTrigger">+ {xen:phrase create_new_resource_field_group}</a></xen:topctrl>
+
+<xen:require css="filter_list.css" />
+<xen:require js="js/xenforo/filter_list.js" />
+
+<xen:form action="{xen:adminlink resource-custom-fields/groups}" class="section">
+	<xen:if is="{$fieldGroups}">
+
+		<h2 class="subHeading">
+			<xen:include template="filter_list_controls" />
+			{xen:phrase resource_field_groups}
+		</h2>
+
+		<ol class="FilterList">
+			<xen:foreach loop="$fieldGroups" value="$fieldGroup">
+				<xen:listitem
+					id="{$fieldGroup.field_group_id}"
+					label="{$fieldGroup.title}"
+					href="{xen:adminlink resource-custom-fields/edit-group, '', 'field_group_id={$fieldGroup.field_group_id}'}"
+					delete="{xen:adminlink resource-custom-fields/delete-group, '', 'field_group_id={$fieldGroup.field_group_id}'}">
+				</xen:listitem>
+			</xen:foreach>
+		</ol>
+
+		<p class="sectionFooter">{xen:phrase showing_x_of_y_items, 'count=<span class="FilterListCount">{xen:count $fieldGroups}</span>', 'total={xen:count $fieldGroups}'}</p>
+
+	<xen:else />
+		<div class="noResults">{xen:phrase no_resource_field_groups_have_been_added_yet}</div>
+	</xen:if>
+</xen:form>]]></template>
+    <template title="resource_field_helper_forums"><![CDATA[<select name="resource_category_ids[]" class="textCtrl" multiple="multiple" size="8">
+	<option value="0" {xen:selected 'in_array(0, {$selCategoryIds})'}>({xen:phrase none})</option>
+	<xen:foreach loop="$categories" value="$category">
+		<option value="{$category.resource_category_id}" {xen:selected 'in_array({$category.resource_category_id}, {$selCategoryIds})'}>{xen:string repeat, '&nbsp; ', $category.depth}{$category.category_title}</option>
+	</xen:foreach>
+</select>]]></template>
+    <template title="resource_field_helper_user_groups"><![CDATA[<xen:include template="thread_prefix_helper_user_groups" />]]></template>
+    <template title="resource_field_import"><![CDATA[<xen:title>{xen:phrase import_field}</xen:title>
+
+<xen:form action="{xen:adminlink resource-custom-fields/import}" upload="true">
+
+	<xen:uploadunit label="{xen:if '{$xenOptions.currentVersionId} >= 1030010', {xen:phrase import_from_uploaded_xml_file}, {xen:phrase import_from_uploaded_file}}:" name="upload" />
+	
+	<xen:radiounit label="{xen:phrase import_as}:" name="target">
+
+		<xen:option label="{xen:phrase field_in_group}:" value="new" selected="true">
+			<xen:select name="field_group_id">
+				<xen:option value="0" label="({xen:phrase none})" />
+				<xen:options source="$fieldGroupOptions" />
+			</xen:select>
+			<xen:textbox placeholder="{xen:phrase field_id}" name="overwrite_field_id" />
+		</xen:option>
+		
+		<xen:option label="{xen:phrase overwrite_field}:" value="overwrite">
+			<xen:select name="overwrite_field_id">
+				<xen:foreach loop="$fields" value="$field">
+					<xen:option value="{$field.field_id}">{$field.title}</xen:option>
+				</xen:foreach>
+			</xen:select>
+		</xen:option>
+
+	</xen:radiounit>
+	
+	<xen:submitunit save="{xen:phrase import}" />
+
+	<input type="hidden" name="_xfConfirm" value="1" />
+</xen:form>]]></template>
+    <template title="resource_field_quickset_editor"><![CDATA[<xen:title>{xen:phrase quick_set_resource_fields}</xen:title>
+
+<xen:require css="public:resource_fields.css" />
+
+<xen:if is="{$field.field_id}">
+	<xen:navigation>
+		<xen:breadcrumb href="{xen:adminlink resource-custom-fields}#{xen:helper listitemid, $field.field_id}">{$masterTitle}</xen:breadcrumb>
+	</xen:navigation>
+</xen:if>
+
+<xen:form action="{xen:adminlink resource-custom-fields/quick-set}">
+
+	<xen:controlunit label="{xen:phrase apply_options_to_these_fields}:">
+		<ul>
+			<xen:foreach loop="$fields" key="$_fieldId" value="$_field">
+				<li style="float: left; margin-right: 5px;"><label class="{$_field.css_class}"><input type="checkbox" name="field_ids[]" value="{$_fieldId}" checked="checked" /> {$_field.title}</label></li>
+			</xen:foreach>
+		</ul>
+	</xen:controlunit>
+
+	<ul class="tabs Tabs" data-panes="#fieldPanes > li">
+		<li class="active"><a>{xen:phrase basic_information}</a></li>
+		<li><a>{xen:phrase forums_and_permissions}</a></li>
+	</ul>
+
+	<ul id="fieldPanes">
+		<li>
+			<xen:checkboxunit label="{xen:phrase field_group}:">
+				<xen:option name="apply_field_group_id" label="{xen:phrase apply_field_group_options}:">
+					<xen:select name="field_group_id" value="{$field.field_group_id}">
+						<xen:option value="0" label="({xen:phrase none})" />
+						<xen:options source="$fieldGroupOptions" />
+					</xen:select>
+				</xen:option>
+			</xen:checkboxunit>
+		</li>
+		<li>
+			<xen:checkboxunit label="{xen:phrase usable_by_user_groups}:">
+				<xen:option name="apply_user_group_ids" label="{xen:phrase apply_user_group_options}:">
+					<xen:disabled>			
+						<xen:include template="resource_field_helper_user_groups" />
+					</xen:disabled>
+				</xen:option>
+			</xen:checkboxunit>
+		
+			<fieldset>
+				<xen:checkboxunit label="{xen:phrase applicable_forums}:">
+					<xen:option name="apply_node_ids" label="{xen:phrase apply_forum_options}:">
+						<xen:disabled>			
+							<xen:include template="resource_field_helper_forums" />
+						</xen:disabled>
+					</xen:option>
+				</xen:checkboxunit>
+			</fieldset>
+		</li>
+	</ul>
+	
+	<xen:submitunit save="{xen:phrase quick_set_resource_fields}" />
+	
+	<xen:if is="{$field.field_id}">
+		<input type="hidden" name="field_id" value="{$field.field_id}" />
+	</xen:if>
+	
+	<input type="hidden" name="_xfConfirm" value="1" />
+
+</xen:form>]]></template>
+    <template title="resource_field_quickset_field_chooser"><![CDATA[<xen:title>{xen:phrase quick_set_resource_fields}</xen:title>
+
+<xen:form action="{xen:adminlink resource-custom-fields/quick-set}">
+	
+	<xen:selectunit name="field_id" label="{xen:phrase copy_settings_from}:">
+		<xen:option value="-1">({xen:phrase none})</xen:option>
+		<xen:options source="$fieldOptions" />
+		<xen:explain>{xen:phrase on_next_page_you_may_apply_settings_to_all_selected_fields}</xen:explain>
+	</xen:selectunit>
+	
+	<xen:submitunit save="{xen:phrase proceed}..." />
+	
+	<xen:foreach loop="$fieldIds" value="$fieldId">
+		<input type="hidden" name="field_ids[]" value="{$fieldId}" />
+	</xen:foreach>
+
+</xen:form>]]></template>
+    <template title="social_forum_field_delete"><![CDATA[<xen:title>{xen:phrase confirm_deletion_of_field}: {$field.title}</xen:title>
+<xen:h1>{xen:phrase confirm_deletion_of_field}</xen:h1>
+
+<xen:navigation>
+	<xen:breadcrumb href="{xen:adminlink 'social-forum-fields/edit', $field}">{$field.title}</xen:breadcrumb>
+</xen:navigation>
+
+<xen:require css="delete_confirmation.css" />
+
+<xen:form action="{xen:adminlink 'social-forum-fields/delete', $field}" class="deleteConfirmForm formOverlay">
+	<p>{xen:phrase please_confirm_that_you_want_to_delete_following_field}:</p>
+	<strong><a href="{xen:adminlink 'social-forum-fields/edit', $field}">{$field.title}</a></strong>
+
+	<xen:submitunit save="{xen:phrase delete_field}" />
+	<input type="hidden" name="_xfConfirm" value="1" />
+</xen:form>]]></template>
+    <template title="social_forum_field_edit"><![CDATA[<xen:title>{xen:if {$field.field_id}, '{xen:phrase edit_field}: {$field.title}', '{xen:phrase create_new_field}'}</xen:title>
+
+<xen:if is="{$field.field_id}">
+	<xen:topctrl>
+		<a href="{xen:adminlink social-forum-fields/export, $field}" class="button">{xen:phrase export_field}</a>
+	</xen:topctrl>
+</xen:if>
+
+<xen:if is="{$field.field_id}">
+	<xen:navigation>
+		<xen:breadcrumb href="{xen:adminlink social-forum-fields}#{xen:helper listitemid, $field.field_id}">{$masterTitle}</xen:breadcrumb>
+	</xen:navigation>
+</xen:if>
+
+<xen:form action="{xen:adminlink 'social-forum-fields/save', $field}" class="AutoValidator" data-redirect="on">
+
+	<ul class="tabs Tabs" data-panes="#socialForumFieldPanes > li">
+		<li class="active"><a>{xen:phrase basic_information}</a></li>
+		<xen:if is="!{$existingType} OR {$existingType} == 'text'">
+			<li><a>{xen:phrase options_for_text_fields}</a></li>
+		</xen:if>
+		<xen:if is="!{$existingType} OR {$existingType} == 'single' OR {$existingType} == 'multiple'">
+			<li><a>{xen:phrase options_for_choice_fields}</a></li>
+		</xen:if>
+		<li><a>{xen:phrase categories_and_permissions}</a></li>
+		<li><a>{xen:phrase general_options}</a></li>
+	</ul>
+	
+	<ul id="socialForumFieldPanes">
+		<li>
+			<xen:if is="{$field.field_id}">
+				<xen:controlunit label="{xen:phrase field_id}:">
+					<xen:html>{$field.field_id}</xen:html>
+					<xen:explain>{xen:phrase this_is_unique_identifier_for_field_cannot_be_changed}</xen:explain>
+				</xen:controlunit>
+			<xen:else />
+				<xen:textboxunit label="{xen:phrase field_id}:" name="new_field_id">
+					<xen:explain>{xen:phrase this_is_unique_identifier_for_field_cannot_be_changed}</xen:explain>
+				</xen:textboxunit>
+			</xen:if>
+		
+			<fieldset>
+				<xen:textboxunit label="{xen:phrase title}:" name="title" value="{$masterTitle}" data-liveTitleTemplate="{xen:if {$field.field_id},
+					'{xen:phrase edit_field}: <em>%s</em>',
+					'{xen:phrase create_new_field}: <em>%s</em>'}" />
+					
+				<xen:textboxunit label="{xen:phrase description}:" name="description" value="{$masterDescription}" rows="2" inputclass="Elastic" />
+			</fieldset>
+			
+			<fieldset>
+				<xen:selectunit label="{xen:phrase field_group}:" name="field_group_id" value="{$field.field_group_id}">
+					<xen:option value="0" label="({xen:phrase none})" />
+					<xen:options source="$fieldGroupOptions" />
+				</xen:selectunit>
+				
+				<xen:spinboxunit label="{xen:phrase display_order}:" name="display_order" value="{$field.display_order}" min="0" />
+			</fieldset>
+			
+			<xen:if is="!{$existingType}">
+				<fieldset>
+					<xen:radiounit label="{xen:phrase field_type}:" name="field_type" value="{$field.field_type}">
+						<xen:options source="$validFieldTypes" />
+					</xen:radiounit>
+				</fieldset>
+			</xen:if>
+		</li>	
+		<xen:if is="!{$existingType} OR {$existingType} == 'text'">
+			<li>
+				<!--<h3 class="textHeading">{xen:phrase options_for_text_fields}</h3>-->
+			
+				<xen:if is="{$existingType}">
+					<xen:radiounit label="{xen:phrase field_type}:" name="field_type" value="{$field.field_type}">
+						<xen:options source="$validFieldTypes" />
+					</xen:radiounit>
+				</xen:if>
+				
+				<fieldset>
+					<xen:radiounit label="{xen:phrase value_match_requirements}:" name="match_type" value="{$field.match_type}" hint="{xen:phrase empty_values_always_allowed}">
+						<xen:option value="none">{xen:phrase none}</xen:option>
+						<xen:option value="number">{xen:phrase number}</xen:option>
+						<xen:option value="alphanumeric">{xen:phrase a_z_0_9_and_only}</xen:option>
+						<xen:option value="email">{xen:phrase email_address}</xen:option>
+						<xen:option value="url">URL</xen:option>
+						<xen:option value="regex" label="{xen:phrase regular_expression}:">
+							<xen:textbox name="match_regex" value="{$field.match_regex}" />
+						</xen:option>
+						<xen:option value="callback" label="{xen:phrase php_callback}:">
+							<xen:disabled>
+								<xen:textbox name="match_callback_class" value="{$field.match_callback_class}" placeholder="{xen:phrase class}" size="25" />
+								::
+								<xen:textbox name="match_callback_method" value="{$field.match_callback_method}" placeholder="{xen:phrase method}" size="25" />
+							</xen:disabled>
+						</xen:option>
+					</xen:radiounit>
+				</fieldset>
+				
+				<fieldset>
+					<xen:spinboxunit label="{xen:phrase maximum_length}:" name="max_length" value="{$field.max_length}" min="0" />
+				</fieldset>
+			</li>
+		<xen:else />
+			<input type="hidden" name="match_type" value="none" />
+		</xen:if>
+		<xen:if is="!{$existingType} OR {$existingType} == 'single' OR {$existingType} == 'multiple'">
+			<li>
+				<!--<h3 class="textHeading">{xen:phrase options_for_choice_fields}</h3>-->
+			
+				<xen:if is="{$existingType}">
+					<xen:radiounit label="{xen:phrase field_type}:" name="field_type" value="{$field.field_type}">
+						<xen:options source="$validFieldTypes" />
+					</xen:radiounit>
+				</xen:if>
+				
+				<fieldset>
+					<xen:controlunit label="{xen:phrase possible_choices}:">
+						<ul class="FieldChoices">
+							<xen:foreach loop="$masterFieldChoices" key="$choice" value="$text">
+								<li>
+									<input type="text" name="field_choice[]" value="{$choice}" class="textCtrl" placeholder="{xen:phrase value_a_z_0_9_and_only}" size="25" maxlength="25" />
+									<input type="text" name="field_choice_text[]" value="{$text}" class="textCtrl" placeholder="{xen:phrase text}" size="25" />
+								</li>
+							</xen:foreach>
+							<li>
+								<input type="text" name="field_choice[]" class="textCtrl" placeholder="{xen:phrase value_a_z_0_9_and_only}" size="25" maxlength="25" />
+								<input type="text" name="field_choice_text[]" class="textCtrl" placeholder="{xen:phrase text}" size="25" />
+							</li>
+						</ul>
+						<input type="button" value="{xen:phrase add_additional_choice}" class="button smallButton FieldAdder" data-source="ul.FieldChoices li" />
+						<p class="explain">{xen:phrase value_represents_internal_value_for_choice_text_is_displayed}</p>
+					</xen:controlunit>
+				</fieldset>
+			</li>
+		</xen:if>
+		<li>
+			<xen:controlunit label="{xen:phrase usable_by_user_groups}:">
+				<xen:include template="social_forum_field_helper_user_groups" />
+			</xen:controlunit>
+			
+			<script>
+			$(function()
+			{
+				$('#SelectAllCategories').click(function(e)
+				{
+					$('#ApplicableCategories').find('option').attr('selected', this.checked);
+				});
+			});
+			</script>
+			
+			<fieldset id="ApplicableCategories">
+				<xen:controlunit label="{xen:phrase applicable_categories}:">
+					<xen:html>
+						<xen:include template="social_forum_field_helper_forums" />
+						<div><label class="muted"><input type="checkbox" id="SelectAllCategories" /> <i>{xen:phrase select_all}</i></label></div>
+					</xen:html>
+				</xen:controlunit>
+			</fieldset>
+		</li>
+		<li>
+			<xen:checkboxunit label="">
+				<xen:option name="viewable_information" selected="{$field.viewable_information}" label="{xen:phrase viewable_on_information_block}" />
+			</xen:checkboxunit>
+			
+			<fieldset>
+				<xen:textboxunit label="{xen:phrase value_display_html}:" name="display_template" value="{$field.display_template}" rows="2" inputclass="Elastic code">
+					<xen:explain>{xen:phrase field_display_html_description, 'fieldId={$field.field_id}'}</xen:explain>
+				</xen:textboxunit>
+			</fieldset>
+		</li>
+	</ul>
+
+	<xen:submitunit save="{xen:phrase save_field}">
+		<xen:if is="{$field.field_id}">
+			<input type="button" value="{xen:phrase delete_field}..." accesskey="d" class="button OverlayTrigger"
+				data-href="{xen:adminlink 'social-forum-fields/delete', $field}" />
+		</xen:if>
+	</xen:submitunit>
+</xen:form>]]></template>
+    <template title="social_forum_field_group_delete"><![CDATA[<xen:title>{xen:phrase confirm_deletion_of_field_group}: {$fieldGroup.title}</xen:title>
+<xen:h1>{xen:phrase confirm_deletion_of_field_group}</xen:h1>
+
+<xen:navigation>
+	<xen:breadcrumb href="{xen:adminlink 'social-forum-fields/edit-group', '', 'field_group_id={$fieldGroup.field_group_id}'}">{$fieldGroup.title}</xen:breadcrumb>
+</xen:navigation>
+
+<xen:require css="delete_confirmation.css" />
+
+<xen:form action="{xen:adminlink 'social-forum-fields/delete-group', '', 'field_group_id={$fieldGroup.field_group_id}'}" class="deleteConfirmForm formOverlay">
+	<p>{xen:phrase please_confirm_that_you_want_to_delete_following_field_group}:</p>
+	<strong><a href="{xen:adminlink 'social-forum-fields/edit-group', '', 'field_group_id={$fieldGroup.field_group_id}'}">{$fieldGroup.title}</a></strong>
+	<p class="muted">{xen:phrase fields_will_be_disassociated}</p>
+
+	<xen:submitunit save="{xen:phrase delete_field_group}" />
+	<input type="hidden" name="_xfConfirm" value="1" />
+</xen:form>]]></template>
+    <template title="social_forum_field_group_edit"><![CDATA[<xen:title>{xen:if $fieldGroup.field_group_id, '{xen:phrase edit_field_group}: {$masterTitle}', '{xen:phrase create_new_field_group}'}</xen:title>
+
+<xen:require css="public:social_forum_fields.css" />
+
+<xen:if is="{$fieldGroup.field_group_id}">
+	<xen:navigation>
+		<xen:breadcrumb href="{xen:adminlink social-forum-fields}#_group{xen:helper listitemid, $fieldGroup.field_group_id}">{$masterTitle}</xen:breadcrumb>
+	</xen:navigation>
+</xen:if>
+
+<xen:form action="{xen:adminlink social-forum-fields/save-group}">
+
+	<xen:textboxunit name="title" value="{$masterTitle}" label="{xen:phrase title}:" data-liveTitleTemplate="{xen:if {$fieldGroup.field_group_id},
+		'{xen:phrase edit_field_group}: <em>%s</em>',
+		'{xen:phrase create_new_field_group}: <em>%s</em>'}" />
+	
+	<xen:spinboxunit name="display_order" value="{$fieldGroup.display_order}" label="{xen:phrase display_order}:" min="0" step="10" />
+	
+	<xen:submitunit save="{xen:phrase save_field_group}">
+		<xen:if is="{$fieldGroup.field_group_id}">
+			<input type="button" value="{xen:phrase delete_field_group}..." accesskey="d" class="button OverlayTrigger"
+				data-href="{xen:adminlink 'social-forum-fields/delete-group', '', 'field_group_id={$fieldGroup.field_group_id}'}" />
+		</xen:if>
+	</xen:submitunit>
+	
+	<input type="hidden" name="field_group_id" value="{$fieldGroup.field_group_id}" />
+
+</xen:form>]]></template>
+    <template title="social_forum_field_group_list"><![CDATA[<xen:title>{xen:phrase social_forum_field_groups}</xen:title>
+
+<xen:topctrl><a href="{xen:adminlink social-forum-fields/add-group}" class="button OverlayTrigger">+ {xen:phrase create_new_social_forum_field_group}</a></xen:topctrl>
+
+<xen:require css="filter_list.css" />
+<xen:require js="js/xenforo/filter_list.js" />
+
+<xen:form action="{xen:adminlink social-forum-fields/groups}" class="section">
+	<xen:if is="{$fieldGroups}">
+
+		<h2 class="subHeading">
+			<xen:include template="filter_list_controls" />
+			{xen:phrase social_forum_field_groups}
+		</h2>
+
+		<ol class="FilterList">
+			<xen:foreach loop="$fieldGroups" value="$fieldGroup">
+				<xen:listitem
+					id="{$fieldGroup.field_group_id}"
+					label="{$fieldGroup.title}"
+					href="{xen:adminlink social-forum-fields/edit-group, '', 'field_group_id={$fieldGroup.field_group_id}'}"
+					delete="{xen:adminlink social-forum-fields/delete-group, '', 'field_group_id={$fieldGroup.field_group_id}'}">
+				</xen:listitem>
+			</xen:foreach>
+		</ol>
+
+		<p class="sectionFooter">{xen:phrase showing_x_of_y_items, 'count=<span class="FilterListCount">{xen:count $fieldGroups}</span>', 'total={xen:count $fieldGroups}'}</p>
+
+	<xen:else />
+		<div class="noResults">{xen:phrase no_social_forum_field_groups_have_been_added_yet}</div>
+	</xen:if>
+</xen:form>]]></template>
+    <template title="social_forum_field_helper_forums"><![CDATA[<select name="node_ids[]" class="textCtrl" multiple="multiple" size="8">
+	<option value="0" {xen:selected 'in_array(0, {$selNodeIds})'}>({xen:phrase none})</option>
+	<xen:foreach loop="$nodes" value="$node">
+		<option value="{$node.node_id}" {xen:selected 'in_array({$node.node_id}, {$selNodeIds})'} {xen:if "{$node.node_type_id} != 'SocialCategory'", 'disabled="disabled"'}>{xen:string repeat, '&nbsp; ', $node.depth}{$node.title}</option>
+	</xen:foreach>
+</select>]]></template>
+    <template title="social_forum_field_helper_user_groups"><![CDATA[<xen:include template="thread_prefix_helper_user_groups" />]]></template>
+    <template title="social_forum_field_import"><![CDATA[<xen:title>{xen:phrase import_field}</xen:title>
+
+<xen:form action="{xen:adminlink social-forum-fields/import}" upload="true">
+
+	<xen:uploadunit label="{xen:if '{$xenOptions.currentVersionId} >= 1030010', {xen:phrase import_from_uploaded_xml_file}, {xen:phrase import_from_uploaded_file}}:" name="upload" />
+	
+	<xen:radiounit label="{xen:phrase import_as}:" name="target">
+
+		<xen:option label="{xen:phrase field_in_group}:" value="new" selected="true">
+			<xen:select name="field_group_id">
+				<xen:option value="0" label="({xen:phrase none})" />
+				<xen:options source="$fieldGroupOptions" />
+			</xen:select>
+			<xen:textbox placeholder="{xen:phrase field_id}" name="overwrite_field_id" />
+		</xen:option>
+		
+		<xen:option label="{xen:phrase overwrite_field}:" value="overwrite">
+			<xen:select name="overwrite_field_id">
+				<xen:foreach loop="$fields" value="$field">
+					<xen:option value="{$field.field_id}">{$field.title}</xen:option>
+				</xen:foreach>
+			</xen:select>
+		</xen:option>
+
+	</xen:radiounit>
+	
+	<xen:submitunit save="{xen:phrase import}" />
+
+	<input type="hidden" name="_xfConfirm" value="1" />
+</xen:form>]]></template>
+    <template title="social_forum_field_list"><![CDATA[<xen:title>{xen:phrase custom_social_forum_fields}</xen:title>
+
+<xen:topctrl>
+	<a href="{xen:adminlink social-forum-fields/add}" class="button">+ {xen:phrase create_new_field}</a>
+	<a href="{xen:adminlink social-forum-fields/add-group}" class="button OverlayTrigger">+ {xen:phrase create_new_field_group}</a>
+	<a href="{xen:adminlink social-forum-fields/import}" class="button">{xen:phrase import_field}</a>
+</xen:topctrl>
+
+<xen:require css="filter_list.css" />
+<xen:require js="js/xenforo/filter_list.js" />
+
+<xen:form action="{xen:adminlink social-forum-fields/quick-set}">
+	<xen:if is="{$fieldGroups}">
+		<div class="section">
+			<h2 class="subHeading">
+				<xen:include template="filter_list_controls" />
+				{xen:phrase custom_social_forum_fields}
+			</h2>
+	
+			<ol class="FilterList" id="ThreadFieldList">
+			<xen:foreach loop="$fieldGroups" key="$fieldGroupId" value="$fields">
+				<h3 class="textHeading" id="{xen:helper listitemid, 'group_{$fieldGroupId}'}">
+					<xen:if is="{$fieldGroupId}">{$fieldGroupTitles.{$fieldGroupId}}<xen:else />({xen:phrase ungrouped})</xen:if>
+					<xen:if is="{$fields}"><label class="Tooltip checkAllColumn" title="{xen:phrase select_all_items_in_this_group}"><input type="checkbox" class="CheckAll" data-target="#fieldGroup{$fieldGroupId}" /></label></xen:if>
+					<xen:if is="{$fieldGroupId}"><a href="{xen:adminlink 'social-forum-fields/edit-group', '', 'field_group_id={$fieldGroupId}'}" class="controls OverlayTrigger">{xen:phrase edit}</a></xen:if>
+				</h3>
+				<xen:if is="{$fields}">
+					<ol id="fieldGroup{$fieldGroupId}">
+						<xen:foreach loop="$fields" value="$field">
+							<xen:listitem
+								id="{$field.field_id}"
+								label="{$field.title}"
+								snippet="{$fieldTypes.{$field.field_type}.label}"
+								href="{xen:adminlink social-forum-fields/edit, $field}"
+								delete="{xen:adminlink social-forum-fields/delete, $field}">
+								<xen:html><label class="secondaryContent"><input type="checkbox" name="field_ids[]" value="{$field.field_id}" /></label></xen:html>
+							</xen:listitem>
+						</xen:foreach>
+					</ol>
+				</xen:if>
+			</xen:foreach>
+			</ol>
+	
+			<p class="sectionFooter">{xen:phrase showing_x_of_y_items, 'count=<span class="FilterListCount">{xen:number $fieldCount}</span>', 'total={xen:number $fieldCount}'}</p>
+		</div>
+
+		<div class="footerControls">
+			<div class="scrollSide">
+				<label class="footerControl"><input type="checkbox" class="CheckAll" data-target="#ThreadFieldList" /> {xen:phrase select_all}</label>
+				<input type="submit" value="{xen:phrase quick_set_selected_items}" class="button OverlayTrigger footerControl" />
+			</div>
+		</div>
+
+	<xen:else />
+		<div class="noResults">{xen:phrase no_custom_social_forum_fields_have_been_defined}</div>
+	</xen:if>
+</xen:form>]]></template>
+    <template title="social_forum_field_quickset_editor"><![CDATA[<xen:title>{xen:phrase quick_set_social_forum_fields}</xen:title>
+
+<xen:require css="public:social_forum_fields.css" />
+
+<xen:if is="{$field.field_id}">
+	<xen:navigation>
+		<xen:breadcrumb href="{xen:adminlink social-forum-fields}#{xen:helper listitemid, $field.field_id}">{$masterTitle}</xen:breadcrumb>
+	</xen:navigation>
+</xen:if>
+
+<xen:form action="{xen:adminlink social-forum-fields/quick-set}">
+
+	<xen:controlunit label="{xen:phrase apply_options_to_these_fields}:">
+		<ul>
+			<xen:foreach loop="$fields" key="$_fieldId" value="$_field">
+				<li style="float: left; margin-right: 5px;"><label class="{$_field.css_class}"><input type="checkbox" name="field_ids[]" value="{$_fieldId}" checked="checked" /> {$_field.title}</label></li>
+			</xen:foreach>
+		</ul>
+	</xen:controlunit>
+
+	<ul class="tabs Tabs" data-panes="#fieldPanes > li">
+		<li class="active"><a>{xen:phrase basic_information}</a></li>
+		<li><a>{xen:phrase forums_and_permissions}</a></li>
+	</ul>
+
+	<ul id="fieldPanes">
+		<li>
+			<xen:checkboxunit label="{xen:phrase field_group}:">
+				<xen:option name="apply_field_group_id" label="{xen:phrase apply_field_group_options}:">
+					<xen:select name="field_group_id" value="{$field.field_group_id}">
+						<xen:option value="0" label="({xen:phrase none})" />
+						<xen:options source="$fieldGroupOptions" />
+					</xen:select>
+				</xen:option>
+			</xen:checkboxunit>
+		</li>
+		<li>
+			<xen:checkboxunit label="{xen:phrase usable_by_user_groups}:">
+				<xen:option name="apply_user_group_ids" label="{xen:phrase apply_user_group_options}:">
+					<xen:disabled>			
+						<xen:include template="social_forum_field_helper_user_groups" />
+					</xen:disabled>
+				</xen:option>
+			</xen:checkboxunit>
+		
+			<fieldset>
+				<xen:checkboxunit label="{xen:phrase applicable_forums}:">
+					<xen:option name="apply_node_ids" label="{xen:phrase apply_forum_options}:">
+						<xen:disabled>			
+							<xen:include template="social_forum_field_helper_forums" />
+						</xen:disabled>
+					</xen:option>
+				</xen:checkboxunit>
+			</fieldset>
+		</li>
+	</ul>
+	
+	<xen:submitunit save="{xen:phrase quick_set_social_forum_fields}" />
+	
+	<xen:if is="{$field.field_id}">
+		<input type="hidden" name="field_id" value="{$field.field_id}" />
+	</xen:if>
+	
+	<input type="hidden" name="_xfConfirm" value="1" />
+
+</xen:form>]]></template>
+    <template title="social_forum_field_quickset_field_chooser"><![CDATA[<xen:title>{xen:phrase quick_set_social_forum_fields}</xen:title>
+
+<xen:form action="{xen:adminlink social-forum-fields/quick-set}">
+	
+	<xen:selectunit name="field_id" label="{xen:phrase copy_settings_from}:">
+		<xen:option value="-1">({xen:phrase none})</xen:option>
+		<xen:options source="$fieldOptions" />
+		<xen:explain>{xen:phrase on_next_page_you_may_apply_settings_to_all_selected_fields}</xen:explain>
+	</xen:selectunit>
+	
+	<xen:submitunit save="{xen:phrase proceed}..." />
+	
+	<xen:foreach loop="$fieldIds" value="$fieldId">
+		<input type="hidden" name="field_ids[]" value="{$fieldId}" />
+	</xen:foreach>
+
+</xen:form>]]></template>
+    <template title="thread_field_delete"><![CDATA[<xen:title>{xen:phrase confirm_deletion_of_field}: {$field.title}</xen:title>
+<xen:h1>{xen:phrase confirm_deletion_of_field}</xen:h1>
+
+<xen:navigation>
+	<xen:breadcrumb href="{xen:adminlink 'thread-fields/edit', $field}">{$field.title}</xen:breadcrumb>
+</xen:navigation>
+
+<xen:require css="delete_confirmation.css" />
+
+<xen:form action="{xen:adminlink 'thread-fields/delete', $field}" class="deleteConfirmForm formOverlay">
+	<p>{xen:phrase please_confirm_that_you_want_to_delete_following_field}:</p>
+	<strong><a href="{xen:adminlink 'thread-fields/edit', $field}">{$field.title}</a></strong>
+
+	<xen:submitunit save="{xen:phrase delete_field}" />
+	<input type="hidden" name="_xfConfirm" value="1" />
+</xen:form>]]></template>
+    <template title="thread_field_edit"><![CDATA[<xen:title>{xen:if {$field.field_id}, '{xen:phrase edit_field}: {$field.title}', '{xen:phrase create_new_field}'}</xen:title>
+
+<xen:if is="{$field.field_id}">
+	<xen:topctrl>
+		<a href="{xen:adminlink thread-fields/export, $field}" class="button">{xen:phrase export_field}</a>
+	</xen:topctrl>
+</xen:if>
+
+<xen:if is="{$field.field_id}">
+	<xen:navigation>
+		<xen:breadcrumb href="{xen:adminlink thread-fields}#{xen:helper listitemid, $field.field_id}">{$masterTitle}</xen:breadcrumb>
+	</xen:navigation>
+</xen:if>
+
+<xen:form action="{xen:adminlink 'thread-fields/save', $field}" class="AutoValidator" data-redirect="on">
+
+	<ul class="tabs Tabs" data-panes="#threadFieldPanes > li">
+		<li class="active"><a>{xen:phrase basic_information}</a></li>
+		<xen:if is="!{$existingType} OR {$existingType} == 'text'">
+			<li><a>{xen:phrase options_for_text_fields}</a></li>
+		</xen:if>
+		<xen:if is="!{$existingType} OR {$existingType} == 'single' OR {$existingType} == 'multiple'">
+			<li><a>{xen:phrase options_for_choice_fields}</a></li>
+		</xen:if>
+		<li><a>{xen:phrase forums_and_permissions}</a></li>
+		<li><a>{xen:phrase general_options}</a></li>
+	</ul>
+	
+	<ul id="threadFieldPanes">
+		<li>
+			<xen:if is="{$field.field_id}">
+				<xen:controlunit label="{xen:phrase field_id}:">
+					<xen:html>{$field.field_id}</xen:html>
+					<xen:explain>{xen:phrase this_is_unique_identifier_for_field_cannot_be_changed}</xen:explain>
+				</xen:controlunit>
+			<xen:else />
+				<xen:textboxunit label="{xen:phrase field_id}:" name="new_field_id">
+					<xen:explain>{xen:phrase this_is_unique_identifier_for_field_cannot_be_changed}</xen:explain>
+				</xen:textboxunit>
+			</xen:if>
+		
+			<fieldset>
+				<xen:textboxunit label="{xen:phrase title}:" name="title" value="{$masterTitle}" data-liveTitleTemplate="{xen:if {$field.field_id},
+					'{xen:phrase edit_field}: <em>%s</em>',
+					'{xen:phrase create_new_field}: <em>%s</em>'}" />
+					
+				<xen:textboxunit label="{xen:phrase description}:" name="description" value="{$masterDescription}" rows="2" inputclass="Elastic" />
+			</fieldset>
+			
+			<fieldset>
+				<xen:selectunit label="{xen:phrase field_group}:" name="field_group_id" value="{$field.field_group_id}">
+					<xen:option value="0" label="({xen:phrase none})" />
+					<xen:options source="$fieldGroupOptions" />
+				</xen:selectunit>
+				
+				<xen:spinboxunit label="{xen:phrase display_order}:" name="display_order" value="{$field.display_order}" min="0" />
+			</fieldset>
+			
+			<xen:if is="!{$existingType}">
+				<fieldset>
+					<xen:radiounit label="{xen:phrase field_type}:" name="field_type" value="{$field.field_type}">
+						<xen:options source="$validFieldTypes" />
+					</xen:radiounit>
+				</fieldset>
+			</xen:if>
+		</li>	
+		<xen:if is="!{$existingType} OR {$existingType} == 'text'">
+			<li>
+				<!--<h3 class="textHeading">{xen:phrase options_for_text_fields}</h3>-->
+			
+				<xen:if is="{$existingType}">
+					<xen:radiounit label="{xen:phrase field_type}:" name="field_type" value="{$field.field_type}">
+						<xen:options source="$validFieldTypes" />
+					</xen:radiounit>
+				</xen:if>
+				
+				<fieldset>
+					<xen:radiounit label="{xen:phrase value_match_requirements}:" name="match_type" value="{$field.match_type}" hint="{xen:phrase empty_values_always_allowed}">
+						<xen:option value="none">{xen:phrase none}</xen:option>
+						<xen:option value="number">{xen:phrase number}</xen:option>
+						<xen:option value="alphanumeric">{xen:phrase a_z_0_9_and_only}</xen:option>
+						<xen:option value="email">{xen:phrase email_address}</xen:option>
+						<xen:option value="url">URL</xen:option>
+						<xen:option value="regex" label="{xen:phrase regular_expression}:">
+							<xen:textbox name="match_regex" value="{$field.match_regex}" />
+						</xen:option>
+						<xen:option value="callback" label="{xen:phrase php_callback}:">
+							<xen:disabled>
+								<xen:textbox name="match_callback_class" value="{$field.match_callback_class}" placeholder="{xen:phrase class}" size="25" />
+								::
+								<xen:textbox name="match_callback_method" value="{$field.match_callback_method}" placeholder="{xen:phrase method}" size="25" />
+							</xen:disabled>
+						</xen:option>
+					</xen:radiounit>
+				</fieldset>
+				
+				<fieldset>
+					<xen:spinboxunit label="{xen:phrase maximum_length}:" name="max_length" value="{$field.max_length}" min="0" />
+				</fieldset>
+			</li>
+		<xen:else />
+			<input type="hidden" name="match_type" value="none" />
+		</xen:if>
+		<xen:if is="!{$existingType} OR {$existingType} == 'single' OR {$existingType} == 'multiple'">
+			<li>
+				<!--<h3 class="textHeading">{xen:phrase options_for_choice_fields}</h3>-->
+			
+				<xen:if is="{$existingType}">
+					<xen:radiounit label="{xen:phrase field_type}:" name="field_type" value="{$field.field_type}">
+						<xen:options source="$validFieldTypes" />
+					</xen:radiounit>
+				</xen:if>
+				
+				<fieldset>
+					<xen:controlunit label="{xen:phrase possible_choices}:">
+						<ul class="FieldChoices">
+							<xen:foreach loop="$masterFieldChoices" key="$choice" value="$text">
+								<li>
+									<input type="text" name="field_choice[]" value="{$choice}" class="textCtrl" placeholder="{xen:phrase value_a_z_0_9_and_only}" size="25" maxlength="25" />
+									<input type="text" name="field_choice_text[]" value="{$text}" class="textCtrl" placeholder="{xen:phrase text}" size="25" />
+								</li>
+							</xen:foreach>
+							<li>
+								<input type="text" name="field_choice[]" class="textCtrl" placeholder="{xen:phrase value_a_z_0_9_and_only}" size="25" maxlength="25" />
+								<input type="text" name="field_choice_text[]" class="textCtrl" placeholder="{xen:phrase text}" size="25" />
+							</li>
+						</ul>
+						<input type="button" value="{xen:phrase add_additional_choice}" class="button smallButton FieldAdder" data-source="ul.FieldChoices li" />
+						<p class="explain">{xen:phrase value_represents_internal_value_for_choice_text_is_displayed}</p>
+					</xen:controlunit>
+				</fieldset>
+			</li>
+		</xen:if>
+		<li>
+			<xen:controlunit label="{xen:phrase usable_by_user_groups}:">
+				<xen:include template="thread_field_helper_user_groups" />
+			</xen:controlunit>
+			
+			<script>
+			$(function()
+			{
+				$('#SelectAllForums').click(function(e)
+				{
+					$('#ApplicableForums').find('option').attr('selected', this.checked);
+				});
+			});
+			</script>
+			
+			<fieldset id="ApplicableForums">
+				<xen:controlunit label="{xen:phrase applicable_forums}:">
+					<xen:html>
+						<xen:include template="thread_field_helper_forums" />
+						<div><label class="muted"><input type="checkbox" id="SelectAllForums" /> <i>{xen:phrase select_all}</i></label></div>
+					</xen:html>
+				</xen:controlunit>
+			</fieldset>
+		</li>
+		<li>
+			<xen:checkboxunit label="">
+				<xen:option name="viewable_forum_view" selected="{$field.viewable_forum_view}" label="{xen:phrase viewable_on_forum_view}" />
+				<xen:option name="viewable_thread_view" selected="{$field.viewable_thread_view}" label="{xen:phrase viewable_on_thread_view}" />
+				<xen:option name="below_title_on_create" selected="{$field.below_title_on_create}" label="{xen:phrase position_below_title_when_creating_thread}" />
+				<xen:option name="search_advanced_thread_waindigo" selected="{$field.search_advanced_thread_waindigo}" label="{xen:phrase waindigo_show_field_in_advanced_thread_search_customfields}" />
+				<xen:option name="search_quick_forum_waindigo" selected="{$field.search_quick_forum_waindigo}" label="{xen:phrase waindigo_show_field_in_forum_quick_search_customfields}" />
+			</xen:checkboxunit>
+
+			<fieldset>
+				<xen:textboxunit label="{xen:phrase value_display_html}:" name="display_template" value="{$field.display_template}" rows="2" inputclass="Elastic code">
+					<xen:explain>{xen:phrase field_display_html_description, 'fieldId={$field.field_id}'}</xen:explain>
+				</xen:textboxunit>
+			</fieldset>
+		</li>
+	</ul>
+
+	<xen:submitunit save="{xen:phrase save_field}">
+		<xen:if is="{$field.field_id}">
+			<input type="button" value="{xen:phrase delete_field}..." accesskey="d" class="button OverlayTrigger"
+				data-href="{xen:adminlink 'thread-fields/delete', $field}" />
+		</xen:if>
+	</xen:submitunit>
+</xen:form>]]></template>
+    <template title="thread_field_group_delete"><![CDATA[<xen:title>{xen:phrase confirm_deletion_of_field_group}: {$fieldGroup.title}</xen:title>
+<xen:h1>{xen:phrase confirm_deletion_of_field_group}</xen:h1>
+
+<xen:navigation>
+	<xen:breadcrumb href="{xen:adminlink 'thread-fields/edit-group', '', 'field_group_id={$fieldGroup.field_group_id}'}">{$fieldGroup.title}</xen:breadcrumb>
+</xen:navigation>
+
+<xen:require css="delete_confirmation.css" />
+
+<xen:form action="{xen:adminlink 'thread-fields/delete-group', '', 'field_group_id={$fieldGroup.field_group_id}'}" class="deleteConfirmForm formOverlay">
+	<p>{xen:phrase please_confirm_that_you_want_to_delete_following_field_group}:</p>
+	<strong><a href="{xen:adminlink 'thread-fields/edit-group', '', 'field_group_id={$fieldGroup.field_group_id}'}">{$fieldGroup.title}</a></strong>
+	<p class="muted">{xen:phrase fields_will_be_disassociated}</p>
+
+	<xen:submitunit save="{xen:phrase delete_field_group}" />
+	<input type="hidden" name="_xfConfirm" value="1" />
+</xen:form>]]></template>
+    <template title="thread_field_group_edit"><![CDATA[<xen:title>{xen:if $fieldGroup.field_group_id, '{xen:phrase edit_field_group}: {$masterTitle}', '{xen:phrase create_new_field_group}'}</xen:title>
+
+<xen:require css="public:thread_fields.css" />
+
+<xen:if is="{$fieldGroup.field_group_id}">
+	<xen:navigation>
+		<xen:breadcrumb href="{xen:adminlink thread-fields}#_group{xen:helper listitemid, $fieldGroup.field_group_id}">{$masterTitle}</xen:breadcrumb>
+	</xen:navigation>
+</xen:if>
+
+<xen:form action="{xen:adminlink thread-fields/save-group}">
+
+	<xen:textboxunit name="title" value="{$masterTitle}" label="{xen:phrase title}:" data-liveTitleTemplate="{xen:if {$fieldGroup.field_group_id},
+		'{xen:phrase edit_field_group}: <em>%s</em>',
+		'{xen:phrase create_new_field_group}: <em>%s</em>'}" />
+	
+	<xen:spinboxunit name="display_order" value="{$fieldGroup.display_order}" label="{xen:phrase display_order}:" min="0" step="10" />
+	
+	<xen:submitunit save="{xen:phrase save_field_group}">
+		<xen:if is="{$fieldGroup.field_group_id}">
+			<input type="button" value="{xen:phrase delete_field_group}..." accesskey="d" class="button OverlayTrigger"
+				data-href="{xen:adminlink 'thread-fields/delete-group', '', 'field_group_id={$fieldGroup.field_group_id}'}" />
+		</xen:if>
+	</xen:submitunit>
+	
+	<input type="hidden" name="field_group_id" value="{$fieldGroup.field_group_id}" />
+
+</xen:form>]]></template>
+    <template title="thread_field_group_list"><![CDATA[<xen:title>{xen:phrase thread_field_groups}</xen:title>
+
+<xen:topctrl><a href="{xen:adminlink thread-fields/add-group}" class="button OverlayTrigger">+ {xen:phrase create_new_thread_field_group}</a></xen:topctrl>
+
+<xen:require css="filter_list.css" />
+<xen:require js="js/xenforo/filter_list.js" />
+
+<xen:form action="{xen:adminlink thread-fields/groups}" class="section">
+	<xen:if is="{$fieldGroups}">
+
+		<h2 class="subHeading">
+			<xen:include template="filter_list_controls" />
+			{xen:phrase thread_field_groups}
+		</h2>
+
+		<ol class="FilterList">
+			<xen:foreach loop="$fieldGroups" value="$fieldGroup">
+				<xen:listitem
+					id="{$fieldGroup.field_group_id}"
+					label="{$fieldGroup.title}"
+					href="{xen:adminlink thread-fields/edit-group, '', 'field_group_id={$fieldGroup.field_group_id}'}"
+					delete="{xen:adminlink thread-fields/delete-group, '', 'field_group_id={$fieldGroup.field_group_id}'}">
+				</xen:listitem>
+			</xen:foreach>
+		</ol>
+
+		<p class="sectionFooter">{xen:phrase showing_x_of_y_items, 'count=<span class="FilterListCount">{xen:count $fieldGroups}</span>', 'total={xen:count $fieldGroups}'}</p>
+
+	<xen:else />
+		<div class="noResults">{xen:phrase no_thread_field_groups_have_been_added_yet}</div>
+	</xen:if>
+</xen:form>]]></template>
+    <template title="thread_field_helper_forums"><![CDATA[<xen:include template="thread_prefix_helper_forums" />]]></template>
+    <template title="thread_field_helper_user_groups"><![CDATA[<xen:include template="thread_prefix_helper_user_groups" />]]></template>
+    <template title="thread_field_import"><![CDATA[<xen:title>{xen:phrase import_field}</xen:title>
+
+<xen:form action="{xen:adminlink thread-fields/import}" upload="true">
+
+	<xen:uploadunit label="{xen:if '{$xenOptions.currentVersionId} >= 1030010', {xen:phrase import_from_uploaded_xml_file}, {xen:phrase import_from_uploaded_file}}:" name="upload" />
+	
+	<xen:radiounit label="{xen:phrase import_as}:" name="target">
+
+		<xen:option label="{xen:phrase field_in_group}:" value="new" selected="true">
+			<xen:select name="field_group_id">
+				<xen:option value="0" label="({xen:phrase none})" />
+				<xen:options source="$fieldGroupOptions" />
+			</xen:select>
+			<xen:textbox placeholder="{xen:phrase field_id}" name="overwrite_field_id" />
+		</xen:option>
+		
+		<xen:option label="{xen:phrase overwrite_field}:" value="overwrite">
+			<xen:select name="overwrite_field_id">
+				<xen:foreach loop="$fields" value="$field">
+					<xen:option value="{$field.field_id}">{$field.title}</xen:option>
+				</xen:foreach>
+			</xen:select>
+		</xen:option>
+
+	</xen:radiounit>
+	
+	<xen:submitunit save="{xen:phrase import}" />
+
+	<input type="hidden" name="_xfConfirm" value="1" />
+</xen:form>]]></template>
+    <template title="thread_field_list"><![CDATA[<xen:title>{xen:phrase custom_thread_fields}</xen:title>
+
+<xen:topctrl>
+	<a href="{xen:adminlink thread-fields/add}" class="button">+ {xen:phrase create_new_field}</a>
+	<a href="{xen:adminlink thread-fields/add-group}" class="button OverlayTrigger">+ {xen:phrase create_new_field_group}</a>
+	<a href="{xen:adminlink thread-fields/import}" class="button">{xen:phrase import_field}</a>
+</xen:topctrl>
+
+<xen:require css="filter_list.css" />
+<xen:require js="js/xenforo/filter_list.js" />
+
+<xen:form action="{xen:adminlink thread-fields/quick-set}">
+	<xen:if is="{$fieldGroups}">
+		<div class="section">
+			<h2 class="subHeading">
+				<xen:include template="filter_list_controls" />
+				{xen:phrase custom_thread_fields}
+			</h2>
+	
+			<ol class="FilterList" id="ThreadFieldList">
+			<xen:foreach loop="$fieldGroups" key="$fieldGroupId" value="$fields">
+				<h3 class="textHeading" id="{xen:helper listitemid, 'group_{$fieldGroupId}'}">
+					<xen:if is="{$fieldGroupId}">{$fieldGroupTitles.{$fieldGroupId}}<xen:else />({xen:phrase ungrouped})</xen:if>
+					<xen:if is="{$fields}"><label class="Tooltip checkAllColumn" title="{xen:phrase select_all_items_in_this_group}"><input type="checkbox" class="CheckAll" data-target="#fieldGroup{$fieldGroupId}" /></label></xen:if>
+					<xen:if is="{$fieldGroupId}"><a href="{xen:adminlink 'thread-fields/edit-group', '', 'field_group_id={$fieldGroupId}'}" class="controls OverlayTrigger">{xen:phrase edit}</a></xen:if>
+				</h3>
+				<xen:if is="{$fields}">
+					<ol id="fieldGroup{$fieldGroupId}">
+						<xen:foreach loop="$fields" value="$field">
+							<xen:listitem
+								id="{$field.field_id}"
+								label="{$field.title}"
+								snippet="{$fieldTypes.{$field.field_type}.label}"
+								href="{xen:adminlink thread-fields/edit, $field}"
+								delete="{xen:adminlink thread-fields/delete, $field}">
+								<xen:html><label class="secondaryContent"><input type="checkbox" name="field_ids[]" value="{$field.field_id}" /></label></xen:html>
+							</xen:listitem>
+						</xen:foreach>
+					</ol>
+				</xen:if>
+			</xen:foreach>
+			</ol>
+	
+			<p class="sectionFooter">{xen:phrase showing_x_of_y_items, 'count=<span class="FilterListCount">{xen:number $fieldCount}</span>', 'total={xen:number $fieldCount}'}</p>
+		</div>
+
+		<div class="footerControls">
+			<div class="scrollSide">
+				<label class="footerControl"><input type="checkbox" class="CheckAll" data-target="#ThreadFieldList" /> {xen:phrase select_all}</label>
+				<input type="submit" value="{xen:phrase quick_set_selected_items}" class="button OverlayTrigger footerControl" />
+			</div>
+		</div>
+
+	<xen:else />
+		<div class="noResults">{xen:phrase no_custom_thread_fields_have_been_defined}</div>
+	</xen:if>
+</xen:form>]]></template>
+    <template title="thread_field_quickset_editor"><![CDATA[<xen:title>{xen:phrase quick_set_thread_fields}</xen:title>
+
+<xen:require css="public:thread_fields.css" />
+
+<xen:if is="{$field.field_id}">
+	<xen:navigation>
+		<xen:breadcrumb href="{xen:adminlink thread-fields}#{xen:helper listitemid, $field.field_id}">{$masterTitle}</xen:breadcrumb>
+	</xen:navigation>
+</xen:if>
+
+<xen:form action="{xen:adminlink thread-fields/quick-set}">
+
+	<xen:controlunit label="{xen:phrase apply_options_to_these_fields}:">
+		<ul>
+			<xen:foreach loop="$fields" key="$_fieldId" value="$_field">
+				<li style="float: left; margin-right: 5px;"><label class="{$_field.css_class}"><input type="checkbox" name="field_ids[]" value="{$_fieldId}" checked="checked" /> {$_field.title}</label></li>
+			</xen:foreach>
+		</ul>
+	</xen:controlunit>
+
+	<ul class="tabs Tabs" data-panes="#fieldPanes > li">
+		<li class="active"><a>{xen:phrase basic_information}</a></li>
+		<li><a>{xen:phrase forums_and_permissions}</a></li>
+	</ul>
+
+	<ul id="fieldPanes">
+		<li>
+			<xen:checkboxunit label="{xen:phrase field_group}:">
+				<xen:option name="apply_field_group_id" label="{xen:phrase apply_field_group_options}:">
+					<xen:select name="field_group_id" value="{$field.field_group_id}">
+						<xen:option value="0" label="({xen:phrase none})" />
+						<xen:options source="$fieldGroupOptions" />
+					</xen:select>
+				</xen:option>
+			</xen:checkboxunit>
+		</li>
+		<li>
+			<xen:checkboxunit label="{xen:phrase usable_by_user_groups}:">
+				<xen:option name="apply_user_group_ids" label="{xen:phrase apply_user_group_options}:">
+					<xen:disabled>			
+						<xen:include template="thread_field_helper_user_groups" />
+					</xen:disabled>
+				</xen:option>
+			</xen:checkboxunit>
+		
+			<fieldset>
+				<xen:checkboxunit label="{xen:phrase applicable_forums}:">
+					<xen:option name="apply_node_ids" label="{xen:phrase apply_forum_options}:">
+						<xen:disabled>			
+							<xen:include template="thread_field_helper_forums" />
+						</xen:disabled>
+					</xen:option>
+				</xen:checkboxunit>
+			</fieldset>
+		</li>
+	</ul>
+	
+	<xen:submitunit save="{xen:phrase quick_set_thread_fields}" />
+	
+	<xen:if is="{$field.field_id}">
+		<input type="hidden" name="field_id" value="{$field.field_id}" />
+	</xen:if>
+	
+	<input type="hidden" name="_xfConfirm" value="1" />
+
+</xen:form>]]></template>
+    <template title="thread_field_quickset_field_chooser"><![CDATA[<xen:title>{xen:phrase quick_set_thread_fields}</xen:title>
+
+<xen:form action="{xen:adminlink thread-fields/quick-set}">
+	
+	<xen:selectunit name="field_id" label="{xen:phrase copy_settings_from}:">
+		<xen:option value="-1">({xen:phrase none})</xen:option>
+		<xen:options source="$fieldOptions" />
+		<xen:explain>{xen:phrase on_next_page_you_may_apply_settings_to_all_selected_fields}</xen:explain>
+	</xen:selectunit>
+	
+	<xen:submitunit save="{xen:phrase proceed}..." />
+	
+	<xen:foreach loop="$fieldIds" value="$fieldId">
+		<input type="hidden" name="field_ids[]" value="{$fieldId}" />
+	</xen:foreach>
+
+</xen:form>]]></template>
+    <template title="user_field_import"><![CDATA[<xen:title>{xen:phrase import_field}</xen:title>
+
+<xen:form action="{xen:adminlink user-fields/import}" upload="true">
+
+	<xen:uploadunit label="{xen:if '{$xenOptions.currentVersionId} >= 1030010', {xen:phrase import_from_uploaded_xml_file}, {xen:phrase import_from_uploaded_file}}:" name="upload" />
+	
+	<xen:radiounit label="{xen:phrase import_as}:" name="target">
+
+		<xen:option label="{xen:phrase field_in_group}:" value="new" selected="true">
+			<xen:select name="field_group_id">
+				<xen:option value="0" label="({xen:phrase none})" />
+				<xen:options source="$fieldGroupOptions" />
+			</xen:select>
+			<xen:textbox placeholder="{xen:phrase field_id}" name="overwrite_field_id" />
+		</xen:option>
+		
+		<xen:option label="{xen:phrase overwrite_field}:" value="overwrite">
+			<xen:select name="overwrite_field_id">
+				<xen:foreach loop="$fields" value="$field">
+					<xen:option value="{$field.field_id}">{$field.title}</xen:option>
+				</xen:foreach>
+			</xen:select>
+		</xen:option>
+
+	</xen:radiounit>
+	
+	<xen:submitunit save="{xen:phrase import}" />
+
+	<input type="hidden" name="_xfConfirm" value="1" />
+</xen:form>]]></template>
+    <template title="waindigo_field_edit_choice_customfields"><![CDATA[<xen:radio name="choice_type" value="{$field.choice_type}">
+	<xen:option value="custom" label="{xen:phrase custom_choices}:">
+		<xen:disabled>
+			{xen:raw $contents}
+		</xen:disabled>
+	</xen:option>
+	<xen:option value="callback" label="{xen:phrase php_callback}:">
+		<xen:disabled>
+			<xen:textbox name="field_choices_callback_class" value="{$field.field_choices_callback_class}" placeholder="{xen:phrase class}" size="25" />
+			::
+			<xen:textbox name="field_choices_callback_method" value="{$field.field_choices_callback_method}" placeholder="{xen:phrase method}" size="25" />
+		</xen:disabled>
+	</xen:option>
+</xen:radio>]]></template>
+    <template title="waindigo_field_edit_panes_customfields"><![CDATA[<fieldset>
+	<xen:controlunit label="{xen:phrase export_callback}:">
+		<xen:textbox name="export_callback_class" value="{$field.export_callback_class}" placeholder="{xen:phrase class}" size="25" />
+		::
+		<xen:textbox name="export_callback_method" value="{$field.export_callback_method}" placeholder="{xen:phrase method}" size="25" />
+	</xen:controlunit>
+</fieldset>
+<fieldset>
+	<xen:include template="helper_addon_unit" />
+</fieldset>]]></template>
+    <template title="waindigo_field_edit_php_callback_customfields"><![CDATA[<li>
+	<label for="ctrl_field_type_callback"><input type="radio" name="field_type" value="callback" class="Disabler" id="ctrl_field_type_callback" {xen:checked '{$field.field_type} == "callback"'}/> {xen:phrase php_callback}:</label>
+	<ul id="ctrl_field_type_callback_Disabler">
+		<li>
+			<input type="text" name="field_callback_class" value="{$field.field_callback_class}" size="25" placeholder="{xen:phrase class}" class="textCtrl" id="ctrl_match_callback_class" />
+			::
+			<input type="text" name="field_callback_method" value="{$field.field_callback_method}" size="25" placeholder="{xen:phrase method}" class="textCtrl" id="ctrl_match_callback_method" />
+		</li>
+	</ul>
+</li>]]></template>
+    <template title="waindigo_field_edit_value_display_customfields"><![CDATA[<xen:radiounit label="{xen:phrase value_display}:" name="value_display" value="{xen:if '{$field.display_callback_class} && {$field.display_callback_method}', 'callback', 'html'}">
+	<xen:option value="html" label="{xen:phrase value_display_html}:">
+		<xen:disabled>
+			<xen:textbox label="" name="display_template" value="{$field.display_template}" rows="2" inputclass="Elastic code" />
+			<p class="explain">{xen:phrase field_display_html_description, 'fieldId={$field.field_id}'}</p>
+		</xen:disabled>
+	</xen:option>
+	<xen:option value="callback" label="{xen:phrase php_callback}:">
+		<xen:disabled>
+			<xen:textbox name="display_callback_class" value="{$field.display_callback_class}" placeholder="{xen:phrase class}" size="25" />
+			::
+			<xen:textbox name="display_callback_method" value="{$field.display_callback_method}" placeholder="{xen:phrase method}" size="25" />
+		</xen:disabled>
+	</xen:option>
+</xen:radiounit>]]></template>
+    <template title="waindigo_forum_edit_panes_customfields"><![CDATA[<li>
+	<xen:if is="{$threadFieldOptions}">
+		<xen:require js="js/xenforo/acp_forum_editor.js" />
+		
+		<xen:controlunit label="{xen:phrase waindigo_available_fields_customfields}:" class="multiple checkboxColumns AvailableFields">
+			<xen:hint><br /><label><input type="checkbox" class="CheckAll" data-target="dl.AvailableFields" /> {xen:phrase select_all}</label></xen:hint>
+			<xen:html>
+				<xen:foreach loop="$threadFieldOptions" key="$displayGroupId" value="$fields">
+					<xen:checkbox>
+						<xen:foreach loop="$fields" key="$fieldId" value="$field">
+							<xen:option name="available_fields[]" value="{$fieldId}" selected="in_array({$fieldId}, {$nodeThreadFields}, true)">{$field.label}</xen:option>
+						</xen:foreach>
+					</xen:checkbox>
+				</xen:foreach>
+			</xen:html>
+		</xen:controlunit>
+
+		<fieldset>
+			<xen:controlunit label="{xen:phrase required_fields}:" class="multiple checkboxColumns RequiredFields">
+				<xen:hint><br /><label><input type="checkbox" class="CheckAll" data-target="dl.RequiredFields" /> {xen:phrase select_all}</label></xen:hint>
+				<xen:html>
+					<xen:foreach loop="$threadFieldOptions" key="$displayGroupId" value="$fields">
+						<xen:checkbox>
+								<xen:foreach loop="$fields" key="$fieldId" value="$field">
+								<xen:option name="required_fields[]" value="{$fieldId}" selected="in_array({$fieldId}, {$nodeRequiredThreadFields}, true)">{$field.label}</xen:option>
+							</xen:foreach>
+						</xen:checkbox>
+					</xen:foreach>
+				</xen:html>
+			</xen:controlunit>
+		</fieldset>
+	<xen:else />
+		<xen:controlunit label="{xen:phrase available_fields}">({xen:phrase none}) <a href="{xen:adminlink thread-fields/add}" target="_blank">{xen:phrase create_new_custom_thread_field}</a></xen:controlunit>
+	</xen:if>
+
+	<fieldset>
+		<xen:textboxunit name="thread_header" value="{$template.thread_header}" label="{xen:phrase header_template_html}:" rows="2" inputclass="Elastic OptOut" />
+		<xen:textboxunit name="thread_footer" value="{$template.thread_footer}" label="{xen:phrase footer_template_html}:" rows="2" inputclass="Elastic OptOut" explain="{xen:phrase use_custom_fields_field_id_to_display_custom_field_data}" />
+	</fieldset>
+</li>
+<xen:if is="{$customThreadFields}">
+	<li>
+		<xen:include template="custom_fields_edit">
+			<xen:map from="$customThreadFields" to="$customFields" />
+		</xen:include>
+	</li>
+</xen:if>]]></template>
+    <template title="waindigo_forum_edit_tabs_customfields"><![CDATA[<li><a>{xen:phrase thread_fields}</a></li>
+<xen:if is="{$customThreadFields}">
+	<li><a>{xen:phrase default_values}</a></li>
+</xen:if>]]></template>
+    <template title="waindigo_resource_category_edit_panes_customfields"><![CDATA[<li>
+	<xen:if is="{$fieldOptions}">
+		<xen:require js="js/xenforo/acp_forum_editor.js" />
+		
+		<xen:controlunit label="{xen:phrase waindigo_available_fields_customfields}:" class="multiple checkboxColumns AvailableFields">
+			<xen:hint><br /><label><input type="checkbox" class="CheckAll" data-target="dl.AvailableFields" /> {xen:phrase select_all}</label></xen:hint>
+			<xen:html>
+				<xen:foreach loop="$fieldOptions" key="$displayGroupId" value="$fields">
+					<xen:checkbox>
+						<xen:foreach loop="$fields" key="$fieldId" value="$field">
+							<xen:option name="available_fields[]" value="{$fieldId}" selected="in_array({$fieldId}, {$categoryFields}, true)">{$field.label}</xen:option>
+						</xen:foreach>
+					</xen:checkbox>
+				</xen:foreach>
+			</xen:html>
+		</xen:controlunit>
+
+		<fieldset>
+			<xen:controlunit label="{xen:phrase required_fields}:" class="multiple checkboxColumns RequiredFields">
+				<xen:hint><br /><label><input type="checkbox" class="CheckAll" data-target="dl.RequiredFields" /> {xen:phrase select_all}</label></xen:hint>
+				<xen:html>
+					<xen:foreach loop="$fieldOptions" key="$displayGroupId" value="$fields">
+						<xen:checkbox>
+								<xen:foreach loop="$fields" key="$fieldId" value="$field">
+								<xen:option name="required_fields[]" value="{$fieldId}" selected="in_array({$fieldId}, {$categoryRequiredFields}, true)">{$field.label}</xen:option>
+							</xen:foreach>
+						</xen:checkbox>
+					</xen:foreach>
+				</xen:html>
+			</xen:controlunit>
+		</fieldset>
+	<xen:else />
+		<xen:controlunit label="{xen:phrase available_fields}">({xen:phrase none}) <a href="{xen:adminlink resource-custom-fields/add}" target="_blank">{xen:phrase create_new_custom_resource_field}</a></xen:controlunit>
+	</xen:if>
+
+	<fieldset>
+		<xen:textboxunit name="header" value="{$template.header}" label="{xen:phrase header_template_html}:" rows="2" inputclass="Elastic OptOut" />
+		<xen:textboxunit name="footer" value="{$template.footer}" label="{xen:phrase footer_template_html}:" rows="2" inputclass="Elastic OptOut" explain="{xen:phrase use_custom_fields_field_id_to_display_custom_field_data}" />
+	</fieldset>
+</li>
+<xen:if is="{$customFields}">
+	<li>
+		<xen:include template="custom_fields_edit" />
+	</li>
+</xen:if>]]></template>
+    <template title="waindigo_resource_category_edit_tabs_customfields"><![CDATA[<li><a>{xen:phrase resource_fields}</a></li>
+<xen:if is="{$customFields}">
+	<li><a>{xen:phrase default_values}</a></li>
+</xen:if>]]></template>
+    <template title="waindigo_resource_edit_container_customfields"><![CDATA[<ul class="tabs Tabs" data-panes="#resourcePanes > li">
+	<xen:hook name="admin_resource_category_edit_tabs">
+	<li class="active"><a>{xen:phrase basic_information}</a></li>
+	<!-- slot: after_basic_information -->
+	</xen:hook>
+</ul>
+
+<ul id="resourcePanes">
+	<xen:hook name="admin_resource_category_edit_panes">
+	<li>
+		{xen:raw $contents}
+	</li>
+	</xen:hook>
+</ul>]]></template>
+    <template title="waindigo_resource_field_delete_customfields"><![CDATA[<xen:title>{xen:phrase confirm_deletion_of_field}: {$field.title}</xen:title>
+<xen:h1>{xen:phrase confirm_deletion_of_field}</xen:h1>
+
+<xen:navigation>
+	<xen:breadcrumb href="{xen:adminlink 'resource-custom-fields/edit', $field}">{$field.title}</xen:breadcrumb>
+</xen:navigation>
+
+<xen:require css="delete_confirmation.css" />
+
+<xen:form action="{xen:adminlink 'resource-custom-fields/delete', $field}" class="deleteConfirmForm formOverlay">
+	<p>{xen:phrase please_confirm_that_you_want_to_delete_following_field}:</p>
+	<strong><a href="{xen:adminlink 'resource-custom-fields/edit', $field}">{$field.title}</a></strong>
+
+	<xen:submitunit save="{xen:phrase delete_field}" />
+	<input type="hidden" name="_xfConfirm" value="1" />
+</xen:form>]]></template>
+    <template title="waindigo_resource_field_edit_customfields"><![CDATA[<xen:title>{xen:if {$field.field_id}, '{xen:phrase edit_field}: {$field.title}', '{xen:phrase create_new_field}'}</xen:title>
+
+<xen:if is="{$field.field_id}">
+	<xen:topctrl>
+		<a href="{xen:adminlink resource-custom-fields/export, $field}" class="button">{xen:phrase export_field}</a>
+	</xen:topctrl>
+</xen:if>
+
+<xen:if is="{$field.field_id}">
+	<xen:navigation>
+		<xen:breadcrumb href="{xen:adminlink resource-custom-fields}#{xen:helper listitemid, $field.field_id}">{$masterTitle}</xen:breadcrumb>
+	</xen:navigation>
+</xen:if>
+
+<xen:form action="{xen:adminlink 'resource-custom-fields/save', $field}" class="AutoValidator" data-redirect="on">
+
+	<ul class="tabs Tabs" data-panes="#resourceFieldPanes > li">
+		<li class="active"><a>{xen:phrase basic_information}</a></li>
+		<xen:if is="!{$existingType} OR {$existingType} == 'text'">
+			<li><a>{xen:phrase options_for_text_fields}</a></li>
+		</xen:if>
+		<xen:if is="!{$existingType} OR {$existingType} == 'single' OR {$existingType} == 'multiple'">
+			<li><a>{xen:phrase options_for_choice_fields}</a></li>
+		</xen:if>
+		<li><a>{xen:phrase categories_and_permissions}</a></li>
+		<li><a>{xen:phrase general_options}</a></li>
+	</ul>
+	
+	<ul id="resourceFieldPanes">
+		<li>
+			<xen:if is="{$field.field_id}">
+				<xen:controlunit label="{xen:phrase field_id}:">
+					<xen:html>{$field.field_id}</xen:html>
+					<xen:explain>{xen:phrase this_is_unique_identifier_for_field_cannot_be_changed}</xen:explain>
+				</xen:controlunit>
+			<xen:else />
+				<xen:textboxunit label="{xen:phrase field_id}:" name="new_field_id">
+					<xen:explain>{xen:phrase this_is_unique_identifier_for_field_cannot_be_changed}</xen:explain>
+				</xen:textboxunit>
+			</xen:if>
+		
+			<fieldset>
+				<xen:textboxunit label="{xen:phrase title}:" name="title" value="{$masterTitle}" data-liveTitleTemplate="{xen:if {$field.field_id},
+					'{xen:phrase edit_field}: <em>%s</em>',
+					'{xen:phrase create_new_field}: <em>%s</em>'}" />
+					
+				<xen:textboxunit label="{xen:phrase description}:" name="description" value="{$masterDescription}" rows="2" inputclass="Elastic" />
+			</fieldset>
+			
+			<fieldset>
+				<xen:selectunit label="{xen:phrase field_group}:" name="field_group_id" value="{$field.field_group_id}">
+					<xen:option value="0" label="({xen:phrase none})" />
+					<xen:options source="$fieldGroupOptions" />
+				</xen:selectunit>
+				
+				<xen:spinboxunit label="{xen:phrase display_order}:" name="display_order" value="{$field.display_order}" min="0" />
+			</fieldset>
+			
+			<xen:if is="!{$existingType}">
+				<fieldset>
+					<xen:radiounit label="{xen:phrase field_type}:" name="field_type" value="{$field.field_type}">
+						<xen:options source="$validFieldTypes" />
+					</xen:radiounit>
+				</fieldset>
+			</xen:if>
+		</li>	
+		<xen:if is="!{$existingType} OR {$existingType} == 'text'">
+			<li>
+				<!--<h3 class="textHeading">{xen:phrase options_for_text_fields}</h3>-->
+			
+				<xen:if is="{$existingType}">
+					<xen:radiounit label="{xen:phrase field_type}:" name="field_type" value="{$field.field_type}">
+						<xen:options source="$validFieldTypes" />
+					</xen:radiounit>
+				</xen:if>
+				
+				<fieldset>
+					<xen:radiounit label="{xen:phrase value_match_requirements}:" name="match_type" value="{$field.match_type}" hint="{xen:phrase empty_values_always_allowed}">
+						<xen:option value="none">{xen:phrase none}</xen:option>
+						<xen:option value="number">{xen:phrase number}</xen:option>
+						<xen:option value="alphanumeric">{xen:phrase a_z_0_9_and_only}</xen:option>
+						<xen:option value="email">{xen:phrase email_address}</xen:option>
+						<xen:option value="url">URL</xen:option>
+						<xen:option value="regex" label="{xen:phrase regular_expression}:">
+							<xen:textbox name="match_regex" value="{$field.match_regex}" />
+						</xen:option>
+						<xen:option value="callback" label="{xen:phrase php_callback}:">
+							<xen:disabled>
+								<xen:textbox name="match_callback_class" value="{$field.match_callback_class}" placeholder="{xen:phrase class}" size="25" />
+								::
+								<xen:textbox name="match_callback_method" value="{$field.match_callback_method}" placeholder="{xen:phrase method}" size="25" />
+							</xen:disabled>
+						</xen:option>
+					</xen:radiounit>
+				</fieldset>
+				
+				<fieldset>
+					<xen:spinboxunit label="{xen:phrase maximum_length}:" name="max_length" value="{$field.max_length}" min="0" />
+				</fieldset>
+			</li>
+		<xen:else />
+			<input type="hidden" name="match_type" value="none" />
+		</xen:if>
+		<xen:if is="!{$existingType} OR {$existingType} == 'single' OR {$existingType} == 'multiple'">
+			<li>
+				<!--<h3 class="textHeading">{xen:phrase options_for_choice_fields}</h3>-->
+			
+				<xen:if is="{$existingType}">
+					<xen:radiounit label="{xen:phrase field_type}:" name="field_type" value="{$field.field_type}">
+						<xen:options source="$validFieldTypes" />
+					</xen:radiounit>
+				</xen:if>
+				
+				<fieldset>
+					<xen:controlunit label="{xen:phrase possible_choices}:">
+						<ul class="FieldChoices">
+							<xen:foreach loop="$masterFieldChoices" key="$choice" value="$text">
+								<li>
+									<input type="text" name="field_choice[]" value="{$choice}" class="textCtrl" placeholder="{xen:phrase value_a_z_0_9_and_only}" size="25" maxlength="25" />
+									<input type="text" name="field_choice_text[]" value="{$text}" class="textCtrl" placeholder="{xen:phrase text}" size="25" />
+								</li>
+							</xen:foreach>
+							<li>
+								<input type="text" name="field_choice[]" class="textCtrl" placeholder="{xen:phrase value_a_z_0_9_and_only}" size="25" maxlength="25" />
+								<input type="text" name="field_choice_text[]" class="textCtrl" placeholder="{xen:phrase text}" size="25" />
+							</li>
+						</ul>
+						<input type="button" value="{xen:phrase add_additional_choice}" class="button smallButton FieldAdder" data-source="ul.FieldChoices li" />
+						<p class="explain">{xen:phrase value_represents_internal_value_for_choice_text_is_displayed}</p>
+					</xen:controlunit>
+				</fieldset>
+			</li>
+		</xen:if>
+		<li>
+			<xen:controlunit label="{xen:phrase usable_by_user_groups}:">
+				<xen:include template="resource_field_helper_user_groups" />
+			</xen:controlunit>
+			
+			<script>
+			$(function()
+			{
+				$('#SelectAllCategories').click(function(e)
+				{
+					$('#ApplicableCategories').find('option').attr('selected', this.checked);
+				});
+			});
+			</script>
+			
+			<fieldset id="ApplicableCategories">
+				<xen:controlunit label="{xen:phrase applicable_categories}:">
+					<xen:html>
+						<xen:include template="resource_field_helper_forums" />
+						<div><label class="muted"><input type="checkbox" id="SelectAllCategories" /> <i>{xen:phrase select_all}</i></label></div>
+					</xen:html>
+				</xen:controlunit>
+			</fieldset>
+		</li>
+		<li>
+			<xen:checkboxunit label="">
+				<xen:option name="viewable_information" selected="{$field.viewable_information}" label="{xen:phrase viewable_on_information_block}" />
+			</xen:checkboxunit>
+			
+			<fieldset>
+				<xen:textboxunit label="{xen:phrase value_display_html}:" name="display_template" value="{$field.display_template}" rows="2" inputclass="Elastic code">
+					<xen:explain>{xen:phrase field_display_html_description, 'fieldId={$field.field_id}'}</xen:explain>
+				</xen:textboxunit>
+			</fieldset>
+		</li>
+	</ul>
+
+	<xen:submitunit save="{xen:phrase save_field}">
+		<xen:if is="{$field.field_id}">
+			<input type="button" value="{xen:phrase delete_field}..." accesskey="d" class="button OverlayTrigger"
+				data-href="{xen:adminlink 'resource-custom-fields/delete', $field}" />
+		</xen:if>
+	</xen:submitunit>
+</xen:form>]]></template>
+    <template title="waindigo_resource_field_list_customfields"><![CDATA[<xen:title>{xen:phrase waindigo_custom_resource_fields_customfields}</xen:title>
+
+<xen:topctrl>
+	<a href="{xen:adminlink resource-custom-fields/add}" class="button">+ {xen:phrase create_new_field}</a>
+	<a href="{xen:adminlink resource-custom-fields/add-group}" class="button OverlayTrigger">+ {xen:phrase create_new_field_group}</a>
+	<a href="{xen:adminlink resource-custom-fields/import}" class="button">{xen:phrase import_field}</a>
+</xen:topctrl>
+
+<xen:require css="filter_list.css" />
+<xen:require js="js/xenforo/filter_list.js" />
+
+<xen:form action="{xen:adminlink resource-custom-fields/quick-set}">
+	<xen:if is="{$fieldGroups}">
+		<div class="section">
+			<h2 class="subHeading">
+				<xen:include template="filter_list_controls" />
+				{xen:phrase waindigo_custom_resource_fields_customfields}
+			</h2>
+	
+			<ol class="FilterList" id="ThreadFieldList">
+			<xen:foreach loop="$fieldGroups" key="$groupId" value="$fields">
+				<h3 class="textHeading" id="{xen:helper listitemid, 'group_{$groupId}'}">
+					<xen:if is="{$groupId}">{$fieldGroupTitles.{$groupId}}<xen:else />({xen:phrase ungrouped})</xen:if>
+					<xen:if is="{$fields}"><label class="Tooltip checkAllColumn" title="{xen:phrase select_all_items_in_this_group}"><input type="checkbox" class="CheckAll" data-target="#fieldGroup{$groupId}" /></label></xen:if>
+					<xen:if is="{$groupId}"><a href="{xen:adminlink 'resource-custom-fields/edit-group', '', 'field_group_id={$groupId}'}" class="controls OverlayTrigger">{xen:phrase edit}</a></xen:if>
+				</h3>
+				<xen:if is="{$fields}">
+					<ol id="fieldGroup{$groupId}">
+						<xen:foreach loop="$fields" value="$field">
+							<xen:listitem
+								id="{$field.field_id}"
+								label="{$field.title}"
+								snippet="{$fieldTypes.{$field.field_type}.label}"
+								href="{xen:adminlink resource-custom-fields/edit, $field}"
+								delete="{xen:adminlink resource-custom-fields/delete, $field}">
+								<xen:html><label class="secondaryContent"><input type="checkbox" name="field_ids[]" value="{$field.field_id}" /></label></xen:html>
+							</xen:listitem>
+						</xen:foreach>
+					</ol>
+				</xen:if>
+			</xen:foreach>
+			</ol>
+	
+			<p class="sectionFooter">{xen:phrase showing_x_of_y_items, 'count=<span class="FilterListCount">{xen:number $fieldCount}</span>', 'total={xen:number $fieldCount}'}</p>
+		</div>
+
+		<div class="footerControls">
+			<div class="scrollSide">
+				<label class="footerControl"><input type="checkbox" class="CheckAll" data-target="#ThreadFieldList" /> {xen:phrase select_all}</label>
+				<input type="submit" value="{xen:phrase quick_set_selected_items}" class="button OverlayTrigger footerControl" />
+			</div>
+		</div>
+
+	<xen:else />
+		<div class="noResults">{xen:phrase waindigo_no_custom_resource_fields_have_been_defined_customfields}</div>
+	</xen:if>
+</xen:form>]]></template>
+    <template title="waindigo_social_category_edit_panes_customfields"><![CDATA[<li>
+	<xen:if is="{$socialForumFieldOptions}">
+		<xen:require js="js/xenforo/acp_forum_editor.js" />
+		
+		<xen:controlunit label="{xen:phrase waindigo_available_fields_customfields}:" class="multiple checkboxColumns AvailableSocialForumFields">
+			<xen:hint><br /><label><input type="checkbox" class="CheckAll" data-target="dl.AvailableSocialForumFields" /> {xen:phrase select_all}</label></xen:hint>
+			<xen:html>
+				<xen:foreach loop="$socialForumFieldOptions" key="$displayGroupId" value="$fields">
+					<xen:checkbox>
+						<xen:foreach loop="$fields" key="$fieldId" value="$field">
+							<xen:option name="available_social_forum_fields[]" value="{$fieldId}" selected="in_array({$fieldId}, {$nodeSocialForumFields}, true)">{$field.label}</xen:option>
+						</xen:foreach>
+					</xen:checkbox>
+				</xen:foreach>
+			</xen:html>
+		</xen:controlunit>
+
+		<fieldset>
+			<xen:controlunit label="{xen:phrase required_fields}:" class="multiple checkboxColumns RequiredSocialForumFields">
+				<xen:hint><br /><label><input type="checkbox" class="CheckAll" data-target="dl.RequiredSocialForumFields" /> {xen:phrase select_all}</label></xen:hint>
+				<xen:html>
+					<xen:foreach loop="$socialForumFieldOptions" key="$displayGroupId" value="$fields">
+						<xen:checkbox>
+								<xen:foreach loop="$fields" key="$fieldId" value="$field">
+								<xen:option name="required_social_forum_fields[]" value="{$fieldId}" selected="in_array({$fieldId}, {$nodeRequiredSocialForumFields}, true)">{$field.label}</xen:option>
+							</xen:foreach>
+						</xen:checkbox>
+					</xen:foreach>
+				</xen:html>
+			</xen:controlunit>
+		</fieldset>
+	<xen:else />
+		<xen:controlunit label="{xen:phrase available_fields}">({xen:phrase none}) <a href="{xen:adminlink social-forum-fields/add}" target="_blank">{xen:phrase create_new_custom_social_forum_field}</a></xen:controlunit>
+	</xen:if>
+
+	<fieldset>
+		<xen:textboxunit name="social_forum_header" value="{$template.social_forum_header}" label="{xen:phrase header_template_html}:" rows="2" inputclass="Elastic OptOut" />
+		<xen:textboxunit name="social_forum_footer" value="{$template.social_forum_footer}" label="{xen:phrase footer_template_html}:" rows="2" inputclass="Elastic OptOut" explain="{xen:phrase use_custom_fields_field_id_to_display_custom_field_data}" />
+	</fieldset>
+</li>
+<xen:if is="{$customSocialForumFields}">
+	<li>
+		<xen:include template="custom_social_forum_fields_edit" />
+	</li>
+</xen:if>]]></template>
+    <template title="waindigo_social_category_edit_tabs_customfields"><![CDATA[<li><a>{xen:phrase social_forum_fields}</a></li>
+<xen:if is="{$customSocialForumFields}">
+	<li><a>{xen:phrase default_values}</a></li>
+</xen:if>]]></template>
+    <template title="waindigo_social_forum_edit_container_customfields"><![CDATA[<ul class="tabs Tabs" data-panes="#socialForumPanes > li">
+	<xen:hook name="admin_social_category_edit_tabs">
+	<li class="active"><a>{xen:phrase basic_information}</a></li>
+	<!-- slot: after_basic_information -->
+	</xen:hook>
+</ul>
+
+<ul id="socialForumPanes">
+	<xen:hook name="admin_social_forum_category_edit_panes">
+	<li>
+		{xen:raw $contents}
+	</li>
+	</xen:hook>
+</ul>]]></template>
+    <template title="waindigo_tools_rebuild_customfields"><![CDATA[<xen:form action="{xen:adminlink 'tools/cache-rebuild'}">
+	<h2 class="subHeading">{xen:phrase waindigo_rebuild_custom_fields_information_library}</h2>
+	<xen:spinboxunit name="options[batch]" value="250" step="50" min="1" label="{xen:phrase items_to_process_per_page}:" />
+	
+	<xen:submitunit save="{xen:phrase rebuild_now}" />
+	<input type="hidden" name="cache" value="CustomFields" />
+</xen:form>]]></template>
+    <template title="waindigo_user_fields_topctrl_export_customfields"><![CDATA[<div class="titleBar">
+	<div class="topCtrl">
+		<a href="{xen:adminlink user-fields/export, $field}" class="button">{xen:phrase export_field}</a>
+	</div>
+</div>]]></template>
+    <template title="waindigo_user_fields_topctrl_import_customfields"><![CDATA[<div class="titleBar">
+	<div class="topCtrl">
+		<a href="{xen:adminlink user-fields/import}" class="button">{xen:phrase import_field}</a>
+	</div>
+</div>]]></template>
+    <template title="waindigo_user_field_edit_general_customfields"><![CDATA[<li>
+	<label for="ctrl_search_advanced_user_waindigo_1">
+		<input type="checkbox" name="search_advanced_user_waindigo" value="1" id="ctrl_search_advanced_user_waindigo_1"{xen:checked {$field.search_advanced_user_waindigo}}>
+		{xen:phrase waindigo_show_field_in_advanced_user_search_customfields}
+	</label>
+</li>]]></template>
+  </admin_templates>
+  <admin_template_modifications>
+    <modification template="resource_field_list" modification_key="waindigo_resourceFieldEditTopCtrl_customFields" description="Adds extra buttons to top control." execution_order="10" enabled="1" action="preg_replace">
+      <find><![CDATA[#(<xen:topctrl>.*)(</xen:topctrl>)#Us]]></find>
+      <replace><![CDATA[${1}
+<a href="{xen:adminlink resource-fields/add-group}" class="button OverlayTrigger">+ {xen:phrase create_new_field_group}</a>
+<a href="{xen:adminlink resource-fields/import}" class="button">{xen:phrase import_field}</a>
+${2}]]></replace>
+    </modification>
+    <modification template="resource_field_edit" modification_key="waindigo_resourceFieldEdit_customFields" description="Adds additional fields to resource field editor." execution_order="10" enabled="1" action="preg_replace">
+      <find><![CDATA[#(<ul class="tabs Tabs" data-panes="\#fieldPanes > li">.*)(<li><a>{xen:phrase general_options}</a></li>.*</ul>.*)(<xen:spinboxunit label="{xen:phrase display_order}:"[^>]*>.*)(<li>\s*<!--<h3 class="textHeading">{xen:phrase general_options}</h3>-->.*)(<script>.*</script>\s*<xen:controlunit label="{xen:phrase applicable_categories}:">.*</xen:controlunit>\s*)(.*</li>)#Us]]></find>
+      <replace><![CDATA[${1}
+<li><a>{xen:phrase categories_and_permissions}</a></li>
+${2}
+<xen:selectunit label="{xen:phrase field_group}:" name="field_group_id" value="{$field.field_group_id}">
+	<xen:option value="0" label="({xen:phrase none})" />
+	<xen:options source="$fieldGroupOptions" />
+</xen:selectunit>
+${3}
+<li>
+<xen:controlunit label="{xen:phrase usable_by_user_groups}:">
+	<xen:include template="resource_field_helper_user_groups" />
+</xen:controlunit>
+<fieldset>
+${5}
+</fieldset>
+</li>
+${4}
+<xen:checkboxunit label="">
+	<xen:option name="viewable_information" selected="{$field.viewable_information}" label="{xen:phrase viewable_on_information_block}" />
+	<xen:option name="allow_sort_chooser" selected="{$field.allow_sort} != 'none'" label="{xen:phrase waindigo_allow_sorting_by_this_field_customfields}">
+		<xen:select name="allow_sort" value="{$field.allow_sort}">
+			<xen:option value="asc">{xen:phrase ascending_order}</xen:option>
+			<xen:option value="desc">{xen:phrase descending_order}</xen:option>
+		</xen:select>
+	</xen:option>
+</xen:checkboxunit>
+${6}]]></replace>
+    </modification>
+    <modification template="resource_field_list" modification_key="waindigo_resourceFieldListQuickSet_customFields" description="Adds quick set to form." execution_order="10" enabled="1" action="preg_replace">
+      <find><![CDATA[#(<xen:form action=")[^"]*("[^>]*>\s*<xen:if is="{\$fieldsGrouped}">)(.*<ol class="FilterList")(>.*<h3[^>]*)(>)(.*)(</h3>)(.*<xen:listitem.*)/>(\s*</xen:foreach>)(.*)(<xen:else />)#Us]]></find>
+      <replace><![CDATA[${1}{xen:adminlink resource-fields/quick-set}${2}
+<div class="section">
+${3} id="ThreadFieldList"${4} id="{xen:helper listitemid, 'group_{$groupId}'}"${5}
+<xen:if is="{$groupedBy} == 'group'">
+<xen:if is="{$groupId}">{$fieldGroupTitles.{$groupId}}<xen:else />({xen:phrase ungrouped})</xen:if>
+<xen:else />
+${6}
+</xen:if>
+<xen:if is="{$fieldsGrouped.{$groupId}}"><label class="Tooltip checkAllColumn" title="{xen:phrase select_all_items_in_this_group}"><input type="checkbox" class="CheckAll" data-target="#fieldGroup{$groupId}" /></label></xen:if>
+<xen:if is="{$groupedBy} == 'group' && {$groupId}"><a href="{xen:adminlink 'resource-custom-fields/edit-group', '', 'field_group_id={$groupId}'}" class="controls OverlayTrigger">{xen:phrase edit}</a></xen:if>
+${7}
+<ol id="fieldGroup{$groupId}" />
+${8}>
+<xen:html><label class="secondaryContent"><input type="checkbox" name="field_ids[]" value="{$field.field_id}" /></label></xen:html>
+</xen:listitem>
+${9}
+</ol>
+${10}
+</div>
+<div class="footerControls">
+	<div class="scrollSide">
+		<label class="footerControl"><input type="checkbox" class="CheckAll" data-target="#ThreadFieldList" /> {xen:phrase select_all}</label>
+		<input type="submit" value="{xen:phrase quick_set_selected_items}" class="button OverlayTrigger footerControl" />
+	</div>
+</div>
+${11}]]></replace>
+    </modification>
+  </admin_template_modifications>
+  <code_events/>
+  <code_event_listeners>
+    <listener event_id="container_admin_params" execute_order="10" callback_class="Waindigo_CustomFields_Listener_ContainerAdminParams" callback_method="containerAdminParams" active="1" hint="" description=""/>
+    <listener event_id="controller_pre_dispatch" execute_order="10" callback_class="Waindigo_Listener_ControllerPreDispatch" callback_method="controllerPreDispatch" active="1" hint="" description=""/>
+    <listener event_id="file_health_check" execute_order="10" callback_class="Waindigo_CustomFields_Listener_FileHealthCheck" callback_method="fileHealthCheck" active="1" hint="" description=""/>
+    <listener event_id="front_controller_post_view" execute_order="10" callback_class="Waindigo_CustomFields_Listener_FrontControllerPostView" callback_method="frontControllerPostView" active="1" hint="" description=""/>
+    <listener event_id="init_dependencies" execute_order="10" callback_class="Waindigo_Listener_InitDependencies" callback_method="initDependencies" active="1" hint="" description=""/>
+    <listener event_id="load_class" execute_order="5" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassDataWriter" active="0" hint="XenForo_DataWriter_UserField" description="XenForo_DataWriter_UserField (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassController" active="0" hint="XenForo_ControllerAdmin_Forum" description="XenForo_ControllerAdmin_Forum (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassController" active="0" hint="XenForo_ControllerAdmin_UserField" description="XenForo_ControllerAdmin_UserField (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassController" active="0" hint="XenForo_ControllerPublic_Forum" description="XenForo_ControllerPublic_Forum (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassController" active="0" hint="XenForo_ControllerPublic_Thread" description="XenForo_ControllerPublic_Thread (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassController" active="0" hint="XenResource_ControllerAdmin_Category" description="XenResource_ControllerAdmin_Category (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassController" active="0" hint="XenResource_ControllerPublic_Resource" description="XenResource_ControllerPublic_Resource (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassModel" active="0" hint="XenForo_Model_Search" description="XenForo_Model_Search (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassDataWriter" active="0" hint="Waindigo_Library_DataWriter_Article" description="Waindigo_Library_DataWriter_Article (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassController" active="0" hint="XenForo_ControllerPublic_Search" description="XenForo_ControllerPublic_Search (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassDataWriter" active="0" hint="Waindigo_Library_DataWriter_Library" description="Waindigo_Library_DataWriter_Library (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassDataWriter" active="0" hint="Waindigo_SocialGroups_DataWriter_SocialForum" description="Waindigo_SocialGroups_DataWriter_SocialForum (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassDataWriter" active="0" hint="XenForo_DataWriter_Discussion_Thread" description="XenForo_DataWriter_Discussion_Thread (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassInstallerWaindigo" active="0" hint="Waindigo_Library_Install_Controller" description="Waindigo_Library_Install_Controller (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassDataWriter" active="0" hint="XenForo_DataWriter_Forum" description="XenForo_DataWriter_Forum (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassDataWriter" active="0" hint="XenForo_DataWriter_User" description="XenForo_DataWriter_User (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassDataWriter" active="0" hint="XenResource_DataWriter_Resource" description="XenResource_DataWriter_Resource (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassDataWriter" active="0" hint="XenResource_DataWriter_Category" description="XenResource_DataWriter_Category (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassInstallerWaindigo" active="0" hint="Waindigo_Library_Install" description="Waindigo_Library_Install (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassInstallerWaindigo" active="0" hint="Waindigo_SocialGroups_Install_Controller" description="Waindigo_SocialGroups_Install_Controller (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassModel" active="0" hint="Waindigo_NoForo_Model_NoForo" description="Waindigo_NoForo_Model_NoForo (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassModel" active="0" hint="XenForo_Model_AddOn" description="XenForo_Model_AddOn (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassModel" active="0" hint="XenForo_Model_Phrase" description="XenForo_Model_Phrase (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassModel" active="0" hint="XenForo_Model_Thread" description="XenForo_Model_Thread (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassModel" active="0" hint="XenForo_Model_UserField" description="XenForo_Model_UserField (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassModel" active="0" hint="XenForo_Model_ThreadRedirect" description="XenForo_Model_ThreadRedirect (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassView" active="0" hint="Waindigo_Library_ViewPublic_Article_View" description="Waindigo_Library_ViewPublic_Article_View (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassView" active="0" hint="Waindigo_SocialGroups_ViewPublic_SocialForum_View" description="Waindigo_SocialGroups_ViewPublic_SocialForum_View (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassView" active="0" hint="XenForo_ViewPublic_Forum_View" description="XenForo_ViewPublic_Forum_View (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassSearchData" active="0" hint="Waindigo_UserSearch_Search_DataHandler_User" description="Waindigo_UserSearch_Search_DataHandler_User (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassView" active="0" hint="XenForo_ViewPublic_Thread_View" description="XenForo_ViewPublic_Thread_View (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassSearchData" active="0" hint="XenForo_Search_DataHandler_Post" description="XenForo_Search_DataHandler_Post (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassView" active="0" hint="XenForo_ViewPublic_Thread_ViewPosts" description="XenForo_ViewPublic_Thread_ViewPosts (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassView" active="0" hint="XenResource_ViewPublic_Resource_View" description="XenResource_ViewPublic_Resource_View (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassController" active="0" hint="Waindigo_Library_ControllerAdmin_Library" description="Waindigo_Library_ControllerAdmin_Library (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassController" active="0" hint="Waindigo_Library_ControllerPublic_Article" description="Waindigo_Library_ControllerPublic_Article (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassController" active="0" hint="Waindigo_Library_ControllerPublic_Library" description="Waindigo_Library_ControllerPublic_Library (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassController" active="0" hint="Waindigo_SocialGroups_ControllerAdmin_SocialCategory" description="Waindigo_SocialGroups_ControllerAdmin_SocialCategory (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassController" active="0" hint="XenResource_ControllerAdmin_Field" description="XenResource_ControllerAdmin_ResourceField (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassModel" active="0" hint="XenResource_Model_ResourceField" description="XenResource_Model_ResourceField (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassSearchData" active="0" hint="Waindigo_Library_Search_DataHandler_ArticlePage" description="Waindigo_Library_Search_DataHandler_ArticlePage (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassSearchData" active="0" hint="XenResource_Search_DataHandler_Update" description="XenResource_Search_DataHandler_Update (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassDataWriter" active="0" hint="XenResource_DataWriter_ResourceField" description="XenResource_DataWriter_ResourceField (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassController" active="0" hint="Waindigo_SocialGroups_ControllerPublic_SocialCategory" description="Waindigo_SocialGroups_ControllerPublic_SocialCategory (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassController" active="0" hint="Waindigo_SocialGroups_ControllerPublic_SocialForum" description="Waindigo_SocialGroups_ControllerPublic_SocialForum (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassModel" active="0" hint="XenResource_Model_Resource" description="XenResource_Model_Resource (For XenForo 1.2 and above)" compatibility_switch="1"/>
+    <listener event_id="load_class_controller" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassController" active="1" hint="" description="(For XenForo 1.1 and below)" compatibility_switch="1"/>
+    <listener event_id="load_class_datawriter" execute_order="5" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassDataWriter" active="1" hint="" description="(For XenForo 1.1 and below)" compatibility_switch="1"/>
+    <listener event_id="load_class_installer_waindigo" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassInstallerWaindigo" active="1" hint="" description="(For XenForo 1.1 and below)" compatibility_switch="1"/>
+    <listener event_id="load_class_model" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassModel" active="1" hint="" description="(For XenForo 1.1 and below)" compatibility_switch="1"/>
+    <listener event_id="load_class_search_data" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassSearchData" active="1" hint="" description="(For XenForo 1.1 and below)" compatibility_switch="1"/>
+    <listener event_id="load_class_search_source" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassSearchSource" active="1" hint="" description="(For XenForo 1.1 and below)" compatibility_switch="1"/>
+    <listener event_id="load_class_view" execute_order="10" callback_class="Waindigo_CustomFields_Listener_LoadClass" callback_method="loadClassView" active="1" hint="" description="(For XenForo 1.1 and below)" compatibility_switch="1"/>
+    <listener event_id="template_create" execute_order="10" callback_class="Waindigo_CustomFields_Listener_TemplateCreate" callback_method="templateCreate" active="1" hint="" description=""/>
+    <listener event_id="template_hook" execute_order="10" callback_class="Waindigo_CustomFields_Listener_TemplateHook" callback_method="templateHook" active="1" hint="" description=""/>
+    <listener event_id="template_post_render" execute_order="10" callback_class="Waindigo_CustomFields_Listener_TemplatePostRender" callback_method="templatePostRender" active="1" hint="" description=""/>
+  </code_event_listeners>
+  <cron/>
+  <email_templates/>
+  <email_template_modifications/>
+  <optiongroups>
+    <group group_id="waindigo_customFields" display_order="2000" debug_only="0"/>
+    <option option_id="waindigo_customFields_partialSearch" edit_format="onoff" data_type="boolean" can_backup="1">
+      <default_value>1</default_value>
+      <edit_format_params/>
+      <sub_options/>
+      <relation group_id="waindigo_customFields" display_order="30"/>
+    </option>
+    <option option_id="waindigo_customFields_searchSingle" edit_format="onoff" data_type="boolean" can_backup="1">
+      <default_value>1</default_value>
+      <edit_format_params/>
+      <sub_options/>
+      <relation group_id="waindigo_customFields" display_order="20"/>
+    </option>
+    <option option_id="waindigo_customFields_showFieldTitles" edit_format="onoff" data_type="boolean" can_backup="1">
+      <default_value>1</default_value>
+      <edit_format_params/>
+      <sub_options/>
+      <relation group_id="waindigo_customFields" display_order="100"/>
+    </option>
+    <option option_id="waindigo_customFields_sortChoicesAlphabetically" edit_format="onoff" data_type="boolean" can_backup="1">
+      <default_value/>
+      <edit_format_params/>
+      <sub_options/>
+      <relation group_id="waindigo_customFields" display_order="200"/>
+    </option>
+    <option option_id="waindigo_showSearchUsableOnly_customFields" edit_format="onoff" data_type="boolean" can_backup="1">
+      <default_value>0</default_value>
+      <edit_format_params/>
+      <sub_options/>
+      <relation group_id="waindigo_customFields" display_order="10"/>
+    </option>
+  </optiongroups>
+  <permissions>
+    <permission_groups/>
+    <permissions>
+      <permission permission_group_id="forum" permission_id="editOwnThreadFields" permission_type="flag" default_value="unset" interface_group_id="forumPermissions" display_order="26"/>
+    </permissions>
+    <interface_groups/>
+  </permissions>
+  <phrases>
+    <phrase title="admin_navigation_resourceCustomFields" version_id="1364133224" version_string="1.0.3"><![CDATA[Custom Resource Fields]]></phrase>
+    <phrase title="admin_navigation_socialForumFields" version_id="1364133224" version_string="1.0.3"><![CDATA[Custom Social Forum Fields]]></phrase>
+    <phrase title="admin_navigation_threadFields" version_id="1342368685" version_string="1.0.0"><![CDATA[Custom Thread Fields]]></phrase>
+    <phrase title="apply_field_group_options" version_id="1343127633" version_string="1.0.2"><![CDATA[Apply field group options]]></phrase>
+    <phrase title="apply_options_to_these_fields" version_id="1343127633" version_string="1.0.2"><![CDATA[Apply options to these fields]]></phrase>
+    <phrase title="categories_and_permissions" version_id="1363009701" version_string="1.0.3"><![CDATA[Categories and Permissions]]></phrase>
+    <phrase title="confirm_deletion_of_field_group" version_id="1342724537" version_string="1.0.0"><![CDATA[Confirm deletion of field group]]></phrase>
+    <phrase title="create_new_custom_resource_field" version_id="1363009701" version_string="1.1.0"><![CDATA[Create New Custom Resource Field]]></phrase>
+    <phrase title="create_new_custom_social_forum_field" version_id="1363009701" version_string="1.1.0"><![CDATA[Create New Custom Social Forum Field]]></phrase>
+    <phrase title="create_new_custom_thread_field" version_id="1342524964" version_string="1.0.0"><![CDATA[Create New Custom Thread Field]]></phrase>
+    <phrase title="create_new_field_group" version_id="1342724537" version_string="1.0.0"><![CDATA[Create New Field Group]]></phrase>
+    <phrase title="custom_choices" version_id="1395932397" version_string="2.0.2"><![CDATA[Custom choices]]></phrase>
+    <phrase title="custom_social_forum_fields" version_id="1363009701" version_string="1.1.0"><![CDATA[Custom Social Forum Fields]]></phrase>
+    <phrase title="custom_thread_fields" version_id="1342458229" version_string="1.0.0"><![CDATA[Custom Thread Fields]]></phrase>
+    <phrase title="default_values" version_id="1343077308" version_string="1.0.1"><![CDATA[Default Values]]></phrase>
+    <phrase title="delete_field_group" version_id="1342724537" version_string="1.0.0"><![CDATA[Delete Field Group]]></phrase>
+    <phrase title="edit_field_group" version_id="1342724537" version_string="1.0.0"><![CDATA[Edit Field Group]]></phrase>
+    <phrase title="export_callback" version_id="1342925581" version_string="1.0.1"><![CDATA[Export Callback]]></phrase>
+    <phrase title="export_field" version_id="1342911780" version_string="1.0.0"><![CDATA[Export Field]]></phrase>
+    <phrase title="fields_will_be_disassociated" version_id="1342724537" version_string="1.0.0"><![CDATA[Fields belonging to this group will disassociated, rather than deleted.]]></phrase>
+    <phrase title="field_group" version_id="1342724537" version_string="1.0.0"><![CDATA[Field Group]]></phrase>
+    <phrase title="field_in_group" version_id="1342904568" version_string="1.0.0"><![CDATA[Field in group]]></phrase>
+    <phrase title="footer_template_html" version_id="1342742585" version_string="1.0.0"><![CDATA[Footer Template HTML]]></phrase>
+    <phrase title="header_template_html" version_id="1342742585" version_string="1.0.0"><![CDATA[Header Template HTML]]></phrase>
+    <phrase title="import_field" version_id="1342904568" version_string="1.0.0"><![CDATA[Import Field]]></phrase>
+    <phrase title="keys" version_id="1345323700" version_string="1.0.3"><![CDATA[Keys]]></phrase>
+    <phrase title="no_custom_social_forum_fields_have_been_defined" version_id="1363009701" version_string="1.1.0"><![CDATA[No custom social forum fields have been defined.]]></phrase>
+    <phrase title="no_custom_thread_fields_have_been_defined" version_id="1342458229" version_string="1.0.0"><![CDATA[No custom thread fields have been defined.]]></phrase>
+    <phrase title="on_next_page_you_may_apply_settings_to_all_selected_fields" version_id="1343127633" version_string="1.0.2"><![CDATA[On the next page, you may apply settings to all the selected fields. If you would like to base these settings on an existing field, select it here.]]></phrase>
+    <phrase title="option_group_waindigo_customFields" version_id="1394726219" version_string="2.0.1"><![CDATA[Custom Fields by Waindigo]]></phrase>
+    <phrase title="option_group_waindigo_customFields_description" version_id="1394726219" version_string="2.0.1"><![CDATA[Options for the Custom Fields by Waindigo add-on.]]></phrase>
+    <phrase title="option_waindigo_customFields_partialSearch" version_id="1417165323" version_string="2.0.9"><![CDATA[Allow partial matches for textboxes and textareas in search]]></phrase>
+    <phrase title="option_waindigo_customFields_partialSearch_explain" version_id="1417165323" version_string="2.0.9"><![CDATA[Enabling this option will allow users to search for part of the value of a custom field.]]></phrase>
+    <phrase title="option_waindigo_customFields_searchSingle" version_id="1417165323" version_string="2.0.9"><![CDATA[Only allow single selection in search for multiselect/checkboxes]]></phrase>
+    <phrase title="option_waindigo_customFields_searchSingle_explain" version_id="1417165323" version_string="2.0.9"><![CDATA[If enabled, a select menu or radio buttons will be displayed in the search form instead of a multi-select menu or checkboxes, respectively, allowing for only a single value to be searched at once.]]></phrase>
+    <phrase title="option_waindigo_customFields_showFieldTitles" version_id="1400053099" version_string="2.0.4"><![CDATA[Show field titles when displaying custom fields (XenForo 1.2+ only)]]></phrase>
+    <phrase title="option_waindigo_customFields_showFieldTitles_explain" version_id="1400053099" version_string="2.0.4"><![CDATA[Disabling this option will stop the field title from being included when custom fields are displayed. This will allow you to include your own modified/formatted field title as part of the Value Display HTML.]]></phrase>
+    <phrase title="option_waindigo_customFields_sortChoicesAlphabetically" version_id="1417165323" version_string="2.0.9"><![CDATA[Always sort custom field choices alphabetically]]></phrase>
+    <phrase title="option_waindigo_customFields_sortChoicesAlphabetically_explain" version_id="1417165323" version_string="2.0.9"><![CDATA[Note: this may break the ability to search for existing values of multi-select and checkboxes fields if the content has not been updated and the order of the selected items has changed.]]></phrase>
+    <phrase title="option_waindigo_showSearchUsableOnly_customFields" version_id="1396597064" version_string="2.0.3"><![CDATA[Only show fields in search if usable by user (XenForo 1.2+ only)]]></phrase>
+    <phrase title="option_waindigo_showSearchUsableOnly_customFields_explain" version_id="1394726219" version_string="2.0.1"><![CDATA[Enabling this option will only allow a user to see a field in a search form if a field is usable by all user groups or they are in a user group that is selected in the 'Usable by User Groups' option.<br/>
+This option does not apply to User Fields which are always available to all user groups.]]></phrase>
+    <phrase title="overwrite_field" version_id="1342904568" version_string="1.0.0"><![CDATA[Overwrite field]]></phrase>
+    <phrase title="permission_forum_editOwnThreadFields" version_id="1395839642" version_string="2.0.2"><![CDATA[Edit thread fields by self (requires edit own post)]]></phrase>
+    <phrase title="please_confirm_that_you_want_to_delete_following_field_group" version_id="1342724537" version_string="1.0.0"><![CDATA[Please confirm that you want to delete the following field group]]></phrase>
+    <phrase title="please_upload_valid_field_xml_file" version_id="1364163110" version_string="1.0.3"><![CDATA[Please upload valid field XML file.]]></phrase>
+    <phrase title="position_below_title_when_creating_thread" version_id="1369349587" version_string="1.1.0"><![CDATA[Position below title when creating a thread]]></phrase>
+    <phrase title="post_fields" version_id="1344370145" version_string="1.0.3"><![CDATA[Post Fields]]></phrase>
+    <phrase title="primary_key" version_id="1345323700" version_string="1.0.3"><![CDATA[Primary Key]]></phrase>
+    <phrase title="quick_set_resource_fields" version_id="1363009701" version_string="1.1.0"><![CDATA[Quick-Set Resource Fields]]></phrase>
+    <phrase title="quick_set_social_forum_fields" version_id="1363009701" version_string="1.1.0"><![CDATA[Quick-Set Social Fields]]></phrase>
+    <phrase title="quick_set_thread_fields" version_id="1343127633" version_string="1.0.2"><![CDATA[Quick-Set Thread Fields]]></phrase>
+    <phrase title="quick_set_user_fields" version_id="1343127633" version_string="1.0.2"><![CDATA[Quick-Set User Fields]]></phrase>
+    <phrase title="requested_custom_field_attachment_not_found" version_id="1369509091" version_string="1.1.0"><![CDATA[The requested custom field attachment could not be found.]]></phrase>
+    <phrase title="required_fields" version_id="1343077308" version_string="1.0.1"><![CDATA[Required Fields]]></phrase>
+    <phrase title="required_fields_will_always_be_shown_during_thread_creation" version_id="1342473155" version_string="1.0.0"><![CDATA[Required fields will always be shown during thread creation.]]></phrase>
+    <phrase title="resource_fields" version_id="1363009701" version_string="1.1.0"><![CDATA[Resource Fields]]></phrase>
+    <phrase title="save_field_group" version_id="1342724537" version_string="1.0.0"><![CDATA[Save Field Group]]></phrase>
+    <phrase title="show_during_thread_creation" version_id="1342461809" version_string="1.0.0"><![CDATA[Show during thread creation]]></phrase>
+    <phrase title="social_forum_fields" version_id="1363009701" version_string="1.1.0"><![CDATA[Social Forum Fields]]></phrase>
+    <phrase title="thread_fields" version_id="1344370145" version_string="1.0.3"><![CDATA[Thread Fields]]></phrase>
+    <phrase title="unique_keys" version_id="1345323700" version_string="1.0.3"><![CDATA[Unique Keys]]></phrase>
+    <phrase title="use_custom_fields_field_id_to_display_custom_field_data" version_id="1342746039" version_string="1.0.0"><![CDATA[Use <font style="font-family: 'Courier New';">{$customFields.FIELD_ID}</font>, replacing <font style="font-family: 'Courier New';">FIELD_ID</font> with the required Field ID, to display custom field data in the header and footer.]]></phrase>
+    <phrase title="value_display" version_id="1364163110" version_string="1.0.3"><![CDATA[Value Display]]></phrase>
+    <phrase title="viewable_on_forum_view" version_id="1369334981" version_string="1.1.0"><![CDATA[Viewable on Forum View]]></phrase>
+    <phrase title="viewable_on_information_block" version_id="1364133224" version_string="1.0.3"><![CDATA[Viewable on information block]]></phrase>
+    <phrase title="viewable_on_thread_view" version_id="1369334981" version_string="1.1.0"><![CDATA[Viewable on Thread View]]></phrase>
+    <phrase title="waindigo_allow_sorting_by_this_field_customfields" version_id="1401813114" version_string="2.0.5"><![CDATA[Allow sorting by this field]]></phrase>
+    <phrase title="waindigo_available_fields_customfields" version_id="1395932397" version_string="2.0.2"><![CDATA[Available Fields]]></phrase>
+    <phrase title="waindigo_custom_fields_customfields" version_id="1345382059" version_string="1.0.3"><![CDATA[Custom Fields]]></phrase>
+    <phrase title="waindigo_custom_resource_fields_customfields" version_id="1363009701" version_string="1.1.0"><![CDATA[Custom Resource Fields]]></phrase>
+    <phrase title="waindigo_edit_custom_fields_customfields" version_id="1395839642" version_string="2.0.2"><![CDATA[Edit Custom Fields]]></phrase>
+    <phrase title="waindigo_no_custom_resource_fields_have_been_defined_customfields" version_id="1363009701" version_string="1.1.0"><![CDATA[No custom resource fields have been defined.]]></phrase>
+    <phrase title="waindigo_rebuild_custom_fields_information_library" version_id="1345378997" version_string="1.0.3"><![CDATA[Rebuild Custom Fields Information]]></phrase>
+    <phrase title="waindigo_select_library_library" version_id="1342983661" version_string="1.0.1"><![CDATA[Select library]]></phrase>
+    <phrase title="waindigo_show_field_in_advanced_thread_search_customfields" version_id="1394726219" version_string="2.0.1"><![CDATA[Show field in advanced thread and posts search]]></phrase>
+    <phrase title="waindigo_show_field_in_advanced_user_search_customfields" version_id="1394726219" version_string="2.0.1"><![CDATA[Show field in advanced user search]]></phrase>
+    <phrase title="waindigo_show_field_in_forum_quick_search_customfields" version_id="1394726219" version_string="2.0.1"><![CDATA[Show field in forum quick search]]></phrase>
+  </phrases>
+  <route_prefixes>
+    <route_type type="admin">
+      <prefix original_prefix="resource-custom-fields" class="Waindigo_CustomFields_Route_PrefixAdmin_ResourceFields" build_link="data_only"/>
+      <prefix original_prefix="social-forum-fields" class="Waindigo_CustomFields_Route_PrefixAdmin_SocialForumFields" build_link="data_only"/>
+      <prefix original_prefix="thread-fields" class="Waindigo_CustomFields_Route_PrefixAdmin_ThreadFields" build_link="data_only"/>
+    </route_type>
+    <route_type type="public">
+      <prefix original_prefix="custom-field-content" class="Waindigo_CustomFields_Route_Prefix_CustomFieldContent" build_link="data_only"/>
+    </route_type>
+  </route_prefixes>
+  <style_properties/>
+  <templates>
+    <template title="waindigo_footer_node_customfields" version_id="1416565251" version_string="2.0.8"><![CDATA[<xen:comment>
+<xen:if hascontent="true">
+	<div class="pairsRows secondaryContent">
+		<xen:contentcheck>
+			<xen:foreach loop="$thread.customFields" key="$groupId" value="$groupCustomFields">
+				<xen:foreach loop="$groupCustomFields.fields" key="$fieldId" value="$field">
+					<xen:include template="custom_field_view" />
+				</xen:foreach>
+			</xen:foreach>
+		</xen:contentcheck>
+	</div>
+</xen:if>
+</xen:comment>]]></template>
+    <template title="waindigo_header_node_customfields" version_id="1369334981" version_string="1.1.0"><![CDATA[<xen:if hascontent="true">
+	<div class="pairsRows secondaryContent">
+		<xen:contentcheck>
+			<xen:foreach loop="$thread.customFields" key="$groupId" value="$groupCustomFields">
+				<xen:foreach loop="$groupCustomFields.fields" key="$fieldId" value="$field">
+					<xen:include template="custom_field_view" />
+				</xen:foreach>
+			</xen:foreach>
+		</xen:contentcheck>
+	</div>
+</xen:if>]]></template>
+    <template title="waindigo_quick_reply_prepend_customfields" version_id="1344380564" version_string="1.0.3"><![CDATA[		<div class="submitUnit">
+			<input type="submit" class="button primary" value="{xen:phrase post_reply}" accesskey="s" />
+			<xen:include template="attachment_upload_button" />
+			<xen:if is="{$showMoreOptions}"><input type="submit" class="button DisableOnSubmit" value="{xen:phrase more_options}..." name="more_options" /></xen:if>
+		</div>]]></template>
+    <template title="waindigo_resource_filter_menu_customfields" version_id="1400056471" version_string="2.0.5"><![CDATA[<xen:if is="{$customResourceFields}">
+	<div class="primaryContent menuHeader"><h3>{xen:phrase waindigo_custom_fields_customfields}</h3></div>
+	<xen:foreach loop="$customResourceFields" value="$resourceFieldGroup">
+		<xen:foreach loop="$resourceFieldGroup.fields" value="$field">
+			<xen:if is="{$field.field_type} != 'callback'">
+				<div class="secondaryContent ResourceFieldFilter">
+					<xen:include template="custom_field_edit" />
+				</div>
+			</xen:if>
+		</xen:foreach>
+	</xen:foreach>
+</xen:if>]]></template>
+    <template title="waindigo_search_bar_forum_only_customfields" version_id="1417165323" version_string="2.0.9"><![CDATA[<xen:if is="{$search.customThreadFields}">
+	<xen:foreach loop="$search.customThreadFields" value="$threadFieldGroup">
+		<xen:foreach loop="$threadFieldGroup.fields" value="$field">
+			<xen:if is="{$field.field_type} == 'multiselect' AND {$xenOptions.waindigo_customFields_searchSingle}">
+				<xen:set var="{$field.field_type}">select</xen:set>
+			</xen:if>
+			<xen:if is="{$field.field_type} == 'checkbox' AND {$xenOptions.waindigo_customFields_searchSingle}">
+				<xen:set var="{$field.field_type}">radio</xen:set>
+			</xen:if>
+			<xen:if is="{$field.field_type} != 'callback'">
+				<xen:include template="custom_field_edit" />
+			</xen:if>
+		</xen:foreach>
+	</xen:foreach>
+</xen:if>]]></template>
+    <template title="waindigo_search_form_post_customfields" version_id="1417165323" version_string="2.0.9"><![CDATA[<xen:if is="{$search.customThreadFields}">
+	<xen:if hascontent="true">
+		<xen:contentcheck>
+			<xen:foreach loop="$search.customThreadFields" value="$threadFieldGroup">
+				<xen:if hascontent="true">
+					<h3 class="textHeading">{$threadFieldGroup.title}</h3>
+					<xen:contentcheck>
+						<xen:foreach loop="$threadFieldGroup.fields" value="$field">
+							<xen:if is="{$field.field_type} == 'multiselect' AND {$xenOptions.waindigo_customFields_searchSingle}">
+								<xen:set var="{$field.field_type}">select</xen:set>
+							</xen:if>
+							<xen:if is="{$field.field_type} == 'checkbox' AND {$xenOptions.waindigo_customFields_searchSingle}">
+								<xen:set var="{$field.field_type}">radio</xen:set>
+							</xen:if>
+							<xen:if is="{$field.field_type} != 'callback'">
+								<xen:include template="custom_field_edit" />
+							</xen:if>
+						</xen:foreach>
+					</xen:contentcheck>
+				</xen:if>
+			</xen:foreach>
+		</xen:contentcheck>
+		<h3 class="textHeading"></h3>
+	</xen:if>
+</xen:if>]]></template>
+    <template title="waindigo_search_form_resource_update_customfields" version_id="1393402882" version_string="1.3.0"><![CDATA[<xen:if is="{$search.customFields}">
+	<xen:foreach loop="$search.customFields" value="$fieldGroup">
+		<h3 class="textHeading">{$fieldGroup.title}</h3>
+		<xen:foreach loop="$fieldGroup.fields" value="$field">
+			<xen:if is="{$field.field_type} != 'callback'">
+				<xen:include template="custom_field_edit" />
+			</xen:if>
+		</xen:foreach>
+	</xen:foreach>
+	<xen:if is="{$supportsRelevance}">
+		<h3 class="textHeading"></h3>
+	</xen:if>
+</xen:if>]]></template>
+    <template title="waindigo_search_form_user_customfields" version_id="1393402882" version_string="1.3.0"><![CDATA[<xen:if is="{$search.customFields}">
+	<fieldset>
+		<xen:foreach loop="$search.customFields" value="$field">
+			<xen:if is="{$field.field_type} != 'callback'">
+				<xen:include template="custom_field_edit" />
+			</xen:if>
+		</xen:foreach>
+	</fieldset>
+</xen:if>]]></template>
+    <template title="waindigo_sidebar_customfields" version_id="1369334981" version_string="1.1.0"><![CDATA[<xen:if hascontent="true">
+<div class="section">
+	<div class="secondaryContent">
+		<h3>{$title}</h3>
+		<div class="pairsJustified">
+			<xen:contentcheck>
+				<xen:foreach loop="{$fields}" value="{$field}">
+					<xen:include template="custom_field_view" />
+				</xen:foreach>
+			</xen:contentcheck>
+		</div>
+	</div>
+</div>
+</xen:if>]]></template>
+    <template title="waindigo_thread_edit_custom_fields_customfields" version_id="1395839642" version_string="2.0.2"><![CDATA[<xen:title>{xen:phrase waindigo_edit_custom_fields_customfields}: {xen:helper threadPrefix, $thread, escaped}{$thread.title}</xen:title>
+<xen:h1>{xen:phrase waindigo_edit_custom_fields_customfields}: {xen:helper threadPrefix, $thread}{$thread.title}</xen:h1>
+
+<xen:navigation>
+	<xen:breadcrumb source="$nodeBreadCrumbs" />
+	<xen:breadcrumb href="{xen:link full:threads, $thread}">{xen:helper threadPrefix, $thread}{$thread.title}</xen:breadcrumb>
+</xen:navigation>
+
+<xen:container var="$bodyClasses">{xen:helper nodeClasses, $nodeBreadCrumbs, $forum}</xen:container>
+
+<form action="{xen:link 'threads/edit-custom-fields', $thread}" method="post" class="xenForm formOverlay">
+
+	<xen:foreach loop="$customThreadFields" value="$threadFieldGroup">
+		<h3 class="textHeading">{$threadFieldGroup.title}</h3>
+		<xen:foreach loop="$threadFieldGroup.fields" value="$field">
+			 <xen:include template="custom_field_edit" />
+		</xen:foreach>
+	</xen:foreach>
+
+	<dl class="ctrlUnit submitUnit">
+		<dt></dt>
+		<dd>
+			<input type="submit" value="{xen:phrase save_changes}" accesskey="s" class="button primary" />
+		</dd>
+	</dl>
+
+	<input type="hidden" name="_xfToken" value="{$visitor.csrf_token_page}" />
+	<input type="hidden" name="_xfConfirm" value="1" />
+</form>]]></template>
+    <template title="waindigo_thread_edit_scrollbar_customfields.css" version_id="1370386150" version_string="1.1.0"><![CDATA[.formOverlay
+{
+	max-height: 400px;
+	overflow-x: auto;
+	overflow-y: auto;
+}]]></template>
+    <template title="waindigo_thread_list_item_customfields" version_id="1396597064" version_string="2.0.3"><![CDATA[<xen:if hascontent="true">
+	<div class="pairsInline">
+		<xen:contentcheck>
+			<xen:if is="{$thread.customThreadFields}">
+				<xen:foreach loop="$thread.customThreadFields" key="$groupId" value="$groupCustomFields">
+					<xen:foreach loop="$groupCustomFields.fields" key="$fieldId" value="$field">
+						<xen:include template="custom_field_view" />
+					</xen:foreach>
+				</xen:foreach>
+			</xen:if>
+		</xen:contentcheck>
+	</div>
+</xen:if>]]></template>
+    <template title="waindigo_thread_view_tools_links_customfields" version_id="1395839642" version_string="2.0.2"><![CDATA[<xen:if is="!{$canEditThread} && {$canEditThreadFields}">
+	<li><a href="{xen:link threads/edit-custom-fields, $thread}" class="OverlayTrigger">{xen:phrase waindigo_edit_custom_fields_customfields}</a></li>
+</xen:if>]]></template>
+  </templates>
+  <public_template_modifications>
+    <modification template="footer" modification_key="waindigo_copyrightNotice_customFields" description="Copyright notice for Custom Fields by Waindigo" execution_order="1" enabled="1" action="callback">
+      <find><![CDATA[/{xen:phrase (?:xenforo|extra)_copyright}/]]></find>
+      <replace><![CDATA[Waindigo_Listener_InitDependencies::copyrightNotice]]></replace>
+    </modification>
+    <modification template="custom_field_view" modification_key="waindigo_customFieldView_customFields" description="Removes field title if required by options." execution_order="10" enabled="1" action="preg_replace">
+      <find><![CDATA[#<dt>{\$field\.title}:</dt>#]]></find>
+      <replace><![CDATA[{xen:if {$xenOptions.waindigo_customFields_showFieldTitles}, '${0}'}]]></replace>
+    </modification>
+    <modification template="resource_add" modification_key="waindigo_resourceAdd_customFields" description="Adds custom fields from other groups." execution_order="10" enabled="1" action="preg_replace">
+      <find><![CDATA[#(<xen:if is="{\$customFields\.)new_tab(}">.*<xen:foreach loop="\$customFields\.)new_tab(.*</xen:if>)#Us]]></find>
+      <replace><![CDATA[${0}
+${1}none${2}none${3}]]></replace>
+    </modification>
+    <modification template="resource_category" modification_key="waindigo_resourceCategory_customFIelds" description="Adds extra tabs to resource category." execution_order="10" enabled="1" action="preg_replace">
+      <find><![CDATA[#(<ol class="tabs">.*)(</ol>)#Us]]></find>
+      <replace><![CDATA[${1}
+<xen:foreach loop="$customFieldTabs" key="$fieldTabId" value="$fieldTab">
+	<li class="{xen:if '{$order} == "{$fieldTabId}"', active}"><a href="{xen:link resources, '', '_params={$pageNavParams}', 'order={$fieldTabId}'}">{$fieldTab}</a></li>
+</xen:foreach>
+${2}]]></replace>
+    </modification>
+    <modification template="resource_filter_menu" modification_key="waindigo_resourceFilterMenu_customFields" description="Adds custom fields to resource filter menu." execution_order="10" enabled="1" action="preg_replace">
+      <find><![CDATA[#$#]]></find>
+      <replace><![CDATA[<xen:include template="waindigo_resource_filter_menu_customfields" />]]></replace>
+    </modification>
+    <modification template="resource_index" modification_key="waindigo_resourceIndex_customFIelds" description="Adds extra tabs to resource index." execution_order="10" enabled="1" action="preg_replace">
+      <find><![CDATA[#(<ol class="tabs">.*)(</ol>)#Us]]></find>
+      <replace><![CDATA[${1}
+<xen:foreach loop="$customFieldTabs" key="$fieldTabId" value="$fieldTab">
+	<li class="{xen:if '{$order} == "{$fieldTabId}"', active}"><a href="{xen:link resources, '', '_params={$pageNavParams}', 'order={$fieldTabId}'}">{$fieldTab}</a></li>
+</xen:foreach>
+${2}]]></replace>
+    </modification>
+    <modification template="search_bar_forum_only" modification_key="waindigo_searchBarForumOnly_customFields" description="Adds custom thread fields to the quick search." execution_order="10" enabled="1" action="preg_replace">
+      <find><![CDATA[#$#]]></find>
+      <replace><![CDATA[<xen:include template="waindigo_search_bar_forum_only_customfields" />]]></replace>
+    </modification>
+    <modification template="search_form_post" modification_key="waindigo_searchFormPost_customFields" description="Adds custom fields to Thread &amp; Posts search form." execution_order="10" enabled="1" action="preg_replace">
+      <find><![CDATA[#<dl class="ctrlUnit">\s*<dt><label>{xen:phrase order_by}:</label></dt>#Us]]></find>
+      <replace><![CDATA[<xen:include template="waindigo_search_form_post_customfields" />
+${0}]]></replace>
+    </modification>
+    <modification template="search_form_resource_update" modification_key="waindigo_searchFormResourceUpdate_customFields" description="Adds custom fields to Resource search form." execution_order="10" enabled="1" action="preg_replace">
+      <find><![CDATA[#<xen:if is="{\$supportsRelevance}">#Us]]></find>
+      <replace><![CDATA[<xen:include template="waindigo_search_form_resource_update_customfields" />
+${0}]]></replace>
+    </modification>
+    <modification template="search_form_user" modification_key="waindigo_searchFormUser_customFields" description="Adds custom fields to Members search form." execution_order="10" enabled="1" action="preg_replace">
+      <find><![CDATA[#<xen:if is="{\$supportsRelevance}">#Us]]></find>
+      <replace><![CDATA[<xen:include template="waindigo_search_form_user_customfields" />
+${0}]]></replace>
+    </modification>
+  </public_template_modifications>
+  <bb_code_media_sites/>
+  <bb_codes/>
+</addon>
